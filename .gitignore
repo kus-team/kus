@@ -38,8 +38,6 @@ pg/
 .DS_Store
 Thumbs.db
 
-# SauronEye — отдельный проект, не часть KUS
-SauronEye/
 *.docx
 ~$*
 

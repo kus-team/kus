@@ -2,9 +2,8 @@
 AI-нарратив для тендера: объясняет гражданину простым русским языком,
 почему этот тендер подозрительный (или нет).
 
-Берём паттерн из SauronEye/services/ai_assistant.py: явный system prompt + сжатый
-контекст из БД + одиночный вызов Anthropic Messages API. Никаких tools — просто
-text-out, чтобы было быстро и дёшево.
+Явный system prompt + сжатый контекст из БД + одиночный вызов Anthropic Messages API.
+Без tools — простой text-out, быстро и дёшево.
 """
 from __future__ import annotations
 
