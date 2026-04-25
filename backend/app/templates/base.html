@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}KUS{% endblock %} | Kill Unlawful Schemes</title>
+    <link rel="stylesheet" href="/static/css/kus.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    {% block head %}{% endblock %}
+</head>
+<body class="page-{{ active_page or 'default' }}">
+    <!-- Декоративная карта Узбекистана как фон. Скрывается на странице /map. -->
+    <div id="bgmap" aria-hidden="true"></div>
+    <div id="bgmap-vignette" aria-hidden="true"></div>
+    <nav class="nav-bar">
+        <a href="/" class="nav-logo">
+            <div class="eye-icon"></div>
+            <span>KUS</span>
+        </a>
+        <div class="nav-links">
+            <a href="/" class="{{ 'active' if active_page == 'dashboard' else '' }}">
+                <i class="fas fa-th-large"></i> Дашборд
+            </a>
+            <a href="/tenders" class="{{ 'active' if active_page == 'tenders' else '' }}">
+                <i class="fas fa-table"></i> Тендеры
+            </a>
+            <a href="/companies" class="{{ 'active' if active_page == 'companies' else '' }}">
+                <i class="fas fa-building"></i> Компании
+            </a>
+            <a href="/graph" class="{{ 'active' if active_page == 'graph' else '' }}">
+                <i class="fas fa-share-nodes"></i> Граф связей
+            </a>
+            <a href="/map" class="{{ 'active' if active_page == 'map' else '' }}">
+                <i class="fas fa-map-location-dot"></i> Карта
+            </a>
+            <a href="/check" class="{{ 'active' if active_page == 'check' else '' }}">
+                <i class="fas fa-shield-halved"></i> Проверить тендер
+            </a>
+        </div>
+    </nav>
+
+    {% block content %}{% endblock %}
+
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 5000);
+        }
+
+        async function api(url) {
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(`API ${res.status}`);
+            return res.json();
+        }
+
+        function fmtUsd(n) {
+            if (n == null) return '—';
+            n = Number(n);
+            if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+            if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'k';
+            return '$' + n.toFixed(0);
+        }
+        function fmtUzs(n) {
+            if (n == null) return '—';
+            n = Number(n);
+            if (n >= 1e9) return (n / 1e9).toFixed(2) + ' млрд сум';
+            if (n >= 1e6) return (n / 1e6).toFixed(1) + ' млн сум';
+            if (n >= 1e3) return (n / 1e3).toFixed(0) + ' тыс сум';
+            return n.toFixed(0) + ' сум';
+        }
+        function riskBadge(score) {
+            if (score == null) return '<span class="badge">—</span>';
+            const cls = score >= 70 ? 'badge-red' : score >= 30 ? 'badge-amber' : 'badge-green';
+            return `<span class="badge ${cls}">${score}</span>`;
+        }
+
+        // Декоративная карта Узбекистана как фон (CartoDB Dark, де-сатурированная через CSS).
+        // Не запускается на странице /map (там карта основная).
+        (function initBgMap() {
+            if (document.body.classList.contains('page-map')) return;
+            const el = document.getElementById('bgmap');
+            if (!el || typeof L === 'undefined') return;
+            const m = L.map(el, {
+                zoomControl: false, attributionControl: false, scrollWheelZoom: false,
+                doubleClickZoom: false, dragging: false, boxZoom: false, keyboard: false,
+                touchZoom: false, tap: false,
+            }).setView([41.5, 64.5], 5);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                subdomains: 'abcd', maxZoom: 8, minZoom: 4,
+            }).addTo(m);
+            window.addEventListener('resize', () => m.invalidateSize());
+        })();
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

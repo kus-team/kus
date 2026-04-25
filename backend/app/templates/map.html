@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+{% set active_page = "map" %}
+{% block title %}Карта Узбекистана{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+{% endblock %}
+
+{% block content %}
+<div id="map" class="map-bg"></div>
+
+<!-- Floating overlays on top of the map -->
+<div class="overlay top-left">
+    <div class="ov-card title-card">
+        <div class="title-row">
+            <div class="title-tag"><span class="dot"></span> KUS · GEO INTEL · LIVE</div>
+            <div class="title-meta" id="metaLabel">REGIONS: 0 · TOTAL: 0</div>
+        </div>
+        <h1>Карта рисков по регионам Узбекистана</h1>
+        <p>Точки = районы Сурхандарьи (аукционы земли) и штабы заказчиков. Размер = объём, цвет = средний риск.</p>
+    </div>
+</div>
+
+<div class="overlay top-right">
+    <div class="ov-card legend-card">
+        <div class="legend-title">RISK</div>
+        <div class="legend-row"><span class="dot" style="background:#27ae60"></span> низкий <span class="hint">&lt;30</span></div>
+        <div class="legend-row"><span class="dot" style="background:#e67e22"></span> средний <span class="hint">30–69</span></div>
+        <div class="legend-row"><span class="dot" style="background:#e74c3c"></span> высокий <span class="hint">≥70</span></div>
+    </div>
+</div>
+
+<div class="overlay bottom-left">
+    <div class="ov-card regions-card">
+        <div class="regions-header">
+            <h3><i class="fas fa-list"></i> Районы Сурхандарьи</h3>
+            <button class="ov-toggle" onclick="document.querySelector('.regions-card').classList.toggle('collapsed')">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+        </div>
+        <div class="regions-list" id="regionList">
+            <div class="skel">Загрузка…</div>
+        </div>
+    </div>
+</div>
+
+<div class="overlay bottom-right">
+    <div class="ov-card kpi-card">
+        <div class="kpi-row">
+            <div class="kpi-cell"><div class="kpi-v" id="kpiRegions">—</div><div class="kpi-l">регионов</div></div>
+            <div class="kpi-cell"><div class="kpi-v" id="kpiLots">—</div><div class="kpi-l">лотов</div></div>
+            <div class="kpi-cell"><div class="kpi-v" id="kpiRed">—</div><div class="kpi-l">красных</div></div>
+        </div>
+    </div>
+</div>
+
+<div class="map-bracket tl"></div>
+<div class="map-bracket tr"></div>
+<div class="map-bracket bl"></div>
+<div class="map-bracket br"></div>
+
+<style>
+/* Take the whole viewport below the navbar */
+body { overflow: hidden; }
+.map-bg { position: fixed; top: 56px; left: 0; right: 0; bottom: 0; background: #0a0e17; z-index: 0; }
+.leaflet-container { background: #0a0e17 !important; font-family: var(--font-ui) !important; }
+.leaflet-control-zoom { border: 1px solid var(--border) !important; }
+.leaflet-control-zoom a { background: var(--bg-surface) !important; color: var(--text-primary) !important; border-bottom-color: var(--border) !important; }
+.leaflet-control-zoom a:hover { background: var(--bg-elevated) !important; color: var(--accent-red) !important; }
+
+/* Corner brackets — over the whole map area */
+.map-bracket { position: fixed; width: 36px; height: 36px; border: 2px solid rgba(192,57,43,0.4); pointer-events: none; z-index: 800; }
+.map-bracket.tl { top: 70px;  left: 14px;  border-right: none; border-bottom: none; }
+.map-bracket.tr { top: 70px;  right: 14px; border-left: none;  border-bottom: none; }
+.map-bracket.bl { bottom: 14px; left: 14px; border-right: none; border-top: none; }
+.map-bracket.br { bottom: 14px; right: 14px; border-left: none; border-top: none; }
+
+/* Overlay positions */
+.overlay { position: fixed; z-index: 900; pointer-events: none; }
+.overlay.top-left    { top: 76px; left: 28px;  max-width: 460px; }
+.overlay.top-right   { top: 76px; right: 28px; }
+.overlay.bottom-left { bottom: 28px; left: 28px; max-width: 360px; }
+.overlay.bottom-right { bottom: 28px; right: 28px; }
+
+.ov-card {
+    pointer-events: auto;
+    background: rgba(18, 25, 41, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.02) inset;
+}
+
+/* Title card */
+.title-card { padding: 18px 22px; }
+.title-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+.title-tag { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 10px; letter-spacing: 2px; color: var(--accent-red); background: rgba(192,57,43,0.12); border: 1px solid rgba(192,57,43,0.3); padding: 4px 12px; border-radius: 14px; }
+.title-tag .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-red); box-shadow: 0 0 10px var(--accent-red-glow); animation: pulse-glow 2s infinite; }
+.title-meta { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); letter-spacing: 1.5px; }
+.title-card h1 { font-family: var(--font-mono); font-size: 18px; font-weight: 700; color: var(--text-primary); line-height: 1.2; margin: 4px 0 6px; }
+.title-card p { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+
+/* Legend */
+.legend-card { padding: 14px 16px; }
+.legend-title { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+.legend-row { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); padding: 3px 0; }
+.legend-row .dot { width: 10px; height: 10px; border-radius: 50%; box-shadow: 0 0 6px currentColor; }
+.legend-row .hint { color: var(--text-dim); margin-left: auto; }
+
+/* Regions sidebar */
+.regions-card { padding: 14px 16px; max-height: 50vh; display: flex; flex-direction: column; transition: all .3s; }
+.regions-card.collapsed { max-height: 50px; overflow: hidden; }
+.regions-card.collapsed .regions-list { display: none; }
+.regions-card.collapsed .ov-toggle i { transform: rotate(-90deg); }
+.regions-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.regions-header h3 { font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
+.regions-header h3 i { color: var(--accent-red-dim); }
+.ov-toggle { background: transparent; border: none; color: var(--text-dim); cursor: pointer; padding: 4px; transition: color .2s, transform .3s; }
+.ov-toggle:hover { color: var(--text-primary); }
+.ov-toggle i { transition: transform .3s; }
+.regions-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; }
+.regions-list .skel { color: var(--text-dim); font-size: 11px; padding: 16px; text-align: center; }
+.region-item { background: rgba(30,42,58,0.5); border: 1px solid transparent; border-radius: var(--radius); padding: 10px 12px; cursor: pointer; transition: all .15s; }
+.region-item:hover { background: var(--bg-surface-hover); border-color: var(--accent-red-dim); }
+.region-item .ri-name { font-size: 12px; color: var(--text-primary); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.region-item .ri-meta { display: flex; justify-content: space-between; margin-top: 4px; font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); }
+.region-item .ri-meta b { color: var(--text-primary); }
+.region-item .ri-bar { height: 3px; background: var(--bg-input); border-radius: 2px; overflow: hidden; margin-top: 6px; }
+.region-item .ri-bar > div { height: 100%; transition: width 1s; }
+
+/* KPI bottom-right */
+.kpi-card { padding: 14px 18px; }
+.kpi-row { display: flex; gap: 24px; }
+.kpi-cell { text-align: center; }
+.kpi-cell .kpi-v { font-family: var(--font-mono); font-size: 24px; font-weight: 700; color: var(--text-primary); line-height: 1; }
+.kpi-cell .kpi-l { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
+
+/* Popup */
+.leaflet-popup-content-wrapper { background: rgba(18,25,41,0.95) !important; backdrop-filter: blur(8px); color: var(--text-primary) !important; border: 1px solid var(--border-light) !important; border-radius: var(--radius-lg) !important; box-shadow: 0 12px 40px rgba(0,0,0,0.6) !important; }
+.leaflet-popup-tip { background: rgba(18,25,41,0.95) !important; }
+.leaflet-popup-close-button { color: var(--text-dim) !important; }
+.kus-popup { font-family: var(--font-ui); padding: 6px; min-width: 220px; }
+.kus-popup .kp-name { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+.kus-popup .kp-row { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 11px; padding: 3px 0; }
+.kus-popup .kp-row .k { color: var(--text-dim); }
+.kus-popup .kp-row .v { color: var(--text-primary); font-weight: 600; }
+.kus-popup .kp-risk { display: inline-block; padding: 4px 12px; border-radius: 12px; font-family: var(--font-mono); font-size: 11px; margin-top: 10px; font-weight: 700; letter-spacing: 0.5px; }
+.kus-popup .kp-risk.red   { background: rgba(231,76,60,0.18);  color: #ff6f61; }
+.kus-popup .kp-risk.amber { background: rgba(230,126,34,0.18); color: var(--accent-amber); }
+.kus-popup .kp-risk.green { background: rgba(39,174,96,0.18);  color: var(--success); }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const COORDS = {
+    'Термиз шаҳри':      [37.227, 67.278],
+    'Термиз тумани':     [37.30,  67.30],
+    'Олтинсой тумани':   [38.30,  67.78],
+    'Қумқўрғон тумани':  [37.78,  67.57],
+    'Жарқўрғон тумани':  [37.50,  67.42],
+    'Денов тумани':      [38.27,  67.91],
+    'Ангор тумани':      [37.45,  67.13],
+    'Узун тумани':       [38.25,  68.05],
+    'Қизириқ тумани':    [37.47,  67.07],
+    'Шўрчи тумани':      [37.97,  67.78],
+    'Бандихон тумани':   [38.00,  67.50],
+    'Музработ тумани':   [37.55,  67.60],
+    'Сариосиё тумани':   [38.42,  67.78],
+    'Шеробод тумани':    [37.68,  67.02],
+    'Tashkent':          [41.299, 69.241],
+    'Almalyk':           [40.847, 69.598],
+};
+
+const map = L.map('map', { zoomControl: false, attributionControl: false, scrollWheelZoom: true })
+    .setView([41.0, 67.0], 6);
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    subdomains: 'abcd', maxZoom: 19,
+}).addTo(map);
+
+function colorForRisk(r) { return r >= 70 ? '#e74c3c' : r >= 30 ? '#e67e22' : '#27ae60'; }
+function radiusForN(n) { return Math.min(40, 8 + Math.sqrt(n) * 1.8); }
+function clsForRisk(r) { return r >= 70 ? 'red' : r >= 30 ? 'amber' : 'green'; }
+
+(async () => {
+    const r = await api('/api/analytics/by-region');
+    const list = r.data || [];
+    let totalN = 0, totalRed = 0;
+    list.forEach(x => { totalN += x.n; totalRed += (x.red || 0); });
+    document.getElementById('metaLabel').textContent =
+        `REGIONS: ${list.length} · TOTAL: ${totalN.toLocaleString('ru-RU')}`;
+    document.getElementById('kpiRegions').textContent = list.length;
+    document.getElementById('kpiLots').textContent = totalN.toLocaleString('ru-RU');
+    document.getElementById('kpiRed').textContent = totalRed;
+
+    list.forEach(item => {
+        const key = item.scope === 'hq' ? item.hq : item.label;
+        const xy = COORDS[key];
+        if (!xy) return;
+        const color = colorForRisk(item.avg_risk);
+        const cls = clsForRisk(item.avg_risk);
+
+        // pulse halo for red
+        if (item.avg_risk >= 70) {
+            L.circleMarker(xy, { radius: radiusForN(item.n) + 12, color, fillOpacity: 0, weight: 1, opacity: 0.3 }).addTo(map);
+        }
+
+        const m = L.circleMarker(xy, {
+            radius: radiusForN(item.n), fillColor: color, color,
+            weight: 2, opacity: 0.95, fillOpacity: 0.45,
+        }).addTo(map);
+
+        m.bindPopup(`
+            <div class="kus-popup">
+                <div class="kp-name">${item.label}</div>
+                <div class="kp-row"><span class="k">Тендеров</span><span class="v">${item.n}</span></div>
+                <div class="kp-row"><span class="k">Сумма UZS</span><span class="v">${(item.total_uzs/1e6).toFixed(0)} млн</span></div>
+                <div class="kp-row"><span class="k">Сумма USD</span><span class="v">$${(item.total_usd/1000).toFixed(1)}k</span></div>
+                <div class="kp-row"><span class="k">Красных</span><span class="v" style="color:#ff6f61">${item.red}</span></div>
+                <span class="kp-risk ${cls}">avg risk ${item.avg_risk}</span>
+            </div>`);
+    });
+
+    const sortedDistricts = list.filter(x => x.scope === 'district').sort((a, b) => b.n - a.n);
+    const colors = { red: '#e74c3c', amber: '#e67e22', green: '#27ae60' };
+    document.getElementById('regionList').innerHTML = sortedDistricts.map(x => {
+        const cls = clsForRisk(x.avg_risk);
+        return `
+        <div class="region-item" onclick="map.flyTo([${COORDS[x.label][0]}, ${COORDS[x.label][1]}], 11, { duration: 0.8 })">
+            <div class="ri-name">${x.label}</div>
+            <div class="ri-meta"><span>${x.n} лотов · ${(x.total_uzs/1e6).toFixed(0)} млн</span><span><b>risk ${x.avg_risk}</b></span></div>
+            <div class="ri-bar"><div style="width:${Math.min(100, x.avg_risk*3)}%; background:${colors[cls]}"></div></div>
+        </div>`;
+    }).join('');
+})();
+</script>
+{% endblock %}

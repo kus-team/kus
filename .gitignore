@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# IDE
+.idea/
+.vscode/
+
+# Claude Code local settings (personal permissions)
+.claude/settings.local.json
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+
+# Local data / cache (НИКОГДА не коммитим в репо)
+data/kus.sqlite
+data/kus.sqlite-journal
+data/kus.sqlite-wal
+data/kus.sqlite-shm
+data/*.html
+data/*.js
+data/*.json
+# Сэмплы датасетов от research-этапа — оставим только report.json для документации
+data/explore/*.json
+!data/explore/report.json
+
+# Embedded Postgres binaries (только для local dev, в репо не нужно)
+pg/
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
+
+# SauronEye — отдельный проект, не часть KUS
+SauronEye/
+*.docx
+~$*
+
+# Бекапы
+*.bak
+*.swp

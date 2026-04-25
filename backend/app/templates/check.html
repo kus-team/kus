@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+{% set active_page = "check" %}
+{% block title %}Проверить тендер{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h1><i class="fas fa-shield-halved"></i> Проверить тендер</h1>
+            <p class="subtitle">Введи ID тендера в KUS, № лота или название — покажем профиль риска с пояснениями и AI-нарративом.</p>
+        </div>
+    </div>
+
+    <div class="check-box">
+        <i class="fas fa-search check-ico"></i>
+        <input type="text" id="qInput" placeholder="ID, Lot ID или ключевое слово…" autofocus>
+        <button class="btn btn-primary" onclick="check()"><i class="fas fa-bolt"></i> Проверить</button>
+    </div>
+    <div class="quick">
+        <span>Быстрый старт:</span>
+        <button class="quick-tag" onclick="document.getElementById('qInput').value='Suvenirlar'; check()">Suvenirlar</button>
+        <button class="quick-tag" onclick="document.getElementById('qInput').value='4029546'; check()">Лот 4029546</button>
+        <button class="quick-tag" onclick="document.getElementById('qInput').value='Услуга'; check()">Услуга …</button>
+    </div>
+
+    <div id="result" class="result"></div>
+</div>
+
+<style>
+.page { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+.page-header h1 { font-family: var(--font-mono); font-size: 24px; display: flex; align-items: center; gap: 12px; }
+.page-header h1 i { color: var(--accent-red-dim); }
+.page-header .subtitle { color: var(--text-secondary); font-size: 13px; margin-top: 4px; }
+
+.check-box { display: flex; gap: 10px; align-items: center; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 8px 8px 8px 18px; max-width: 760px; margin: 28px 0 12px; transition: border-color .2s; }
+.check-box:focus-within { border-color: var(--accent-red); box-shadow: 0 0 0 3px var(--accent-red-glow); }
+.check-box .check-ico { color: var(--text-dim); }
+.check-box input { flex: 1; background: transparent; border: none; color: var(--text-primary); padding: 14px; font-size: 15px; font-family: var(--font-mono); outline: none; }
+.quick { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+.quick-tag { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-secondary); padding: 5px 12px; border-radius: 14px; font-family: var(--font-mono); font-size: 11px; cursor: pointer; transition: all .2s; }
+.quick-tag:hover { border-color: var(--accent-red-dim); color: var(--accent-red); }
+
+.result { margin-top: 28px; }
+.result-skel { color: var(--text-dim); font-size: 13px; }
+
+/* ===== Hero score ===== */
+.score-hero {
+    display: grid; grid-template-columns: auto 1fr; gap: 32px;
+    align-items: center; padding: 28px 32px;
+    background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    margin-bottom: 16px; position: relative; overflow: hidden;
+}
+.score-hero.red    { box-shadow: 0 0 60px rgba(231,76,60,0.15) inset; border-color: rgba(231,76,60,0.3); }
+.score-hero.amber  { box-shadow: 0 0 60px rgba(230,126,34,0.12) inset; border-color: rgba(230,126,34,0.3); }
+.score-hero.green  { box-shadow: 0 0 60px rgba(39,174,96,0.12) inset; border-color: rgba(39,174,96,0.3); }
+
+.score-ring { position: relative; width: 160px; height: 160px; }
+.score-ring svg { transform: rotate(-90deg); }
+.score-ring .bg { stroke: var(--bg-input); }
+.score-ring .fg { transition: stroke-dashoffset 1.5s cubic-bezier(0.22, 1, 0.36, 1); stroke-linecap: round; }
+.score-hero.red   .score-ring .fg { stroke: #e74c3c; filter: drop-shadow(0 0 8px rgba(231,76,60,0.6)); }
+.score-hero.amber .score-ring .fg { stroke: var(--accent-amber); filter: drop-shadow(0 0 8px rgba(230,126,34,0.5)); }
+.score-hero.green .score-ring .fg { stroke: var(--success); filter: drop-shadow(0 0 8px rgba(39,174,96,0.5)); }
+.score-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.score-text .num { font-family: var(--font-mono); font-size: 48px; font-weight: 700; line-height: 1; }
+.score-hero.red   .score-text .num { color: #ff6f61; }
+.score-hero.amber .score-text .num { color: var(--accent-amber); }
+.score-hero.green .score-text .num { color: var(--success); }
+.score-text .of { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); margin-top: 4px; letter-spacing: 1px; }
+
+.score-info .badge-zone { display: inline-flex; align-items: center; gap: 8px; padding: 5px 14px; border-radius: 20px; font-family: var(--font-mono); font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
+.score-hero.red   .badge-zone { background: rgba(231,76,60,0.15);  color: #ff6f61; }
+.score-hero.amber .badge-zone { background: rgba(230,126,34,0.15); color: var(--accent-amber); }
+.score-hero.green .badge-zone { background: rgba(39,174,96,0.15);  color: var(--success); }
+.score-info h2 { font-family: var(--font-mono); font-size: 20px; margin: 12px 0 8px; color: var(--text-primary); }
+.score-info p { color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
+.score-info .lot-meta { display: flex; gap: 18px; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); margin-top: 14px; flex-wrap: wrap; }
+.score-info .lot-meta b { color: var(--text-primary); }
+
+/* ===== Flag cards ===== */
+.flags-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 16px; }
+.flag-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px; position: relative; overflow: hidden; transition: all .25s; }
+.flag-card.fired { border-color: rgba(231,76,60,0.35); background: linear-gradient(135deg, rgba(231,76,60,0.08) 0%, var(--bg-surface) 60%); }
+.flag-card .fc-head { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.flag-card .fc-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; background: var(--bg-elevated); color: var(--text-dim); flex-shrink: 0; transition: all .25s; }
+.flag-card.fired .fc-icon { background: linear-gradient(135deg, #e74c3c, var(--accent-red-dim)); color: white; box-shadow: 0 4px 16px rgba(231,76,60,0.35); }
+.flag-card .fc-title { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.flag-card .fc-pts { font-family: var(--font-mono); font-size: 11px; padding: 2px 8px; border-radius: 8px; background: var(--bg-elevated); color: var(--text-dim); margin-left: auto; }
+.flag-card.fired .fc-pts { background: rgba(231,76,60,0.2); color: #ff6f61; }
+.flag-card .fc-why { color: var(--text-secondary); font-size: 12px; line-height: 1.6; }
+.flag-card.fired .fc-why { color: var(--text-primary); }
+
+/* ===== Meta panel ===== */
+.meta-panel { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 16px; }
+.meta-panel h3 { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); margin-bottom: 14px; }
+.meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.meta-grid .m { padding: 12px 14px; background: var(--bg-elevated); border-radius: var(--radius); }
+.meta-grid .k { color: var(--text-dim); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; }
+.meta-grid .v { color: var(--text-primary); font-size: 13px; font-family: var(--font-mono); margin-top: 4px; word-break: break-word; }
+
+/* ===== Price comparison bar ===== */
+.price-cmp { background: var(--bg-elevated); padding: 14px; border-radius: var(--radius); margin-top: 12px; }
+.price-cmp .pc-row { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); margin-bottom: 6px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.8px; }
+.price-cmp .pc-bar { position: relative; height: 8px; background: var(--bg-input); border-radius: 4px; overflow: visible; }
+.price-cmp .pc-avg { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--accent-cyan); }
+.price-cmp .pc-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--success), var(--accent-amber), #e74c3c); }
+.price-cmp .pc-mark { position: absolute; top: -16px; transform: translateX(-50%); font-family: var(--font-mono); font-size: 9px; color: var(--accent-cyan); white-space: nowrap; }
+
+/* ===== AI panel ===== */
+.ai-panel { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+.ai-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; background: linear-gradient(180deg, rgba(192,57,43,0.06) 0%, transparent 100%); }
+.ai-header h3 { font-family: var(--font-mono); font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); }
+.ai-header .ai-indicator { width: 10px; height: 10px; border-radius: 50%; background: var(--accent-red); box-shadow: 0 0 12px var(--accent-red-glow); animation: pulse-glow 2s infinite; }
+.ai-header .ai-tag { font-family: var(--font-mono); font-size: 10px; padding: 2px 8px; background: rgba(0,172,193,0.12); color: var(--accent-cyan); border-radius: 10px; letter-spacing: 0.5px; }
+.ai-body { padding: 20px; }
+.ai-placeholder { color: var(--text-dim); font-size: 13px; font-style: italic; }
+.chat-msg { padding: 14px 18px; border-radius: var(--radius-lg); font-size: 14px; line-height: 1.7; }
+.chat-msg.assistant { background: rgba(192,57,43,0.08); border: 1px solid rgba(192,57,43,0.2); color: var(--text-primary); white-space: pre-wrap; }
+.chat-msg.system { background: rgba(230,126,34,0.1); border: 1px solid rgba(230,126,34,0.2); color: var(--accent-amber); font-size: 12px; font-family: var(--font-mono); }
+.ai-meta-row { margin-top: 12px; color: var(--text-dim); font-size: 11px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.5px; }
+.ai-meta-row a { color: var(--accent-cyan); text-decoration: none; cursor: pointer; }
+.ai-meta-row a:hover { color: var(--text-primary); }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function check() {
+    const q = document.getElementById('qInput').value.trim();
+    if (!q) return;
+    const out = document.getElementById('result');
+    out.innerHTML = '<div class="result-skel"><i class="fas fa-spinner fa-spin"></i> Ищу…</div>';
+    try {
+        let t;
+        if (/^\d+$/.test(q)) { try { t = await api('/api/tenders/' + q); } catch {} }
+        if (!t) {
+            const r = await api('/api/tenders?q=' + encodeURIComponent(q) + '&limit=1');
+            t = (r.data || [])[0];
+        }
+        if (!t) { out.innerHTML = '<div class="result-skel">Ничего не найдено по «' + q + '»</div>'; return; }
+        render(t);
+    } catch (e) {
+        out.innerHTML = '<div class="result-skel" style="color:#ff6f61">Ошибка: ' + e.message + '</div>';
+    }
+}
+
+function render(t) {
+    const flags = t.risk_flags || {};
+    const score = t.risk_score ?? 0;
+    const cls = score >= 70 ? 'red' : score >= 30 ? 'amber' : 'green';
+    const zoneTxt = cls === 'red' ? 'ВЫСОКИЙ РИСК' : cls === 'amber' ? 'СРЕДНИЙ' : 'НИЗКИЙ';
+    const verdict = cls === 'red' ? 'Сработало 2+ красных флага. Стоит проверить вручную.' :
+                    cls === 'amber' ? 'Сработал 1 флаг. Подозрительно, но не критично.' :
+                    'Аномалий не обнаружено. Тендер выглядит чистым.';
+
+    const RING_R = 70, CIRC = 2 * Math.PI * RING_R;
+    const offset = CIRC * (1 - score / 100);
+
+    const flagDefs = [
+        { id: 'no_compete', icon: 'fa-handshake-slash', title: 'Прямая закупка без конкурса', pts: '+30',
+          why: flags.no_compete
+            ? 'Контракт оформлен как прямая закупка (Togridantogri / Прямые договора). Конкурс не проводился, поставщик выбран без альтернатив.'
+            : 'Закупка прошла стандартную конкурсную процедуру.' },
+        { id: 'monopoly', icon: 'fa-user-tie', title: 'Монополизация (свой победитель)', pts: '+30',
+          why: flags.monopoly
+            ? `Этот победитель выигрывал у этого заказчика уже ${flags.pair_wins} раз — паттерн «своей компании».`
+            : `Пара заказчик–победитель встречалась только ${flags.pair_wins ?? 1} раз.` },
+        { id: 'overpriced', icon: 'fa-arrow-trend-up', title: 'Цена выше средней по категории', pts: '+40',
+          why: flags.overpriced
+            ? `Сумма контракта на 30%+ выше средней по категории (avg ≈ ${flags.category_avg ? Number(flags.category_avg).toLocaleString('ru-RU') : '?'} сум).`
+            : 'Цена в пределах нормы по категории.' },
+    ];
+
+    // price-cmp bar — показываем где наша цена относительно avg
+    let priceCmp = '';
+    if (t.amount_uzs && flags.category_avg) {
+        const our = +t.amount_uzs;
+        const avg = +flags.category_avg;
+        const max = Math.max(our, avg) * 1.5;
+        const ourPct = Math.min(100, (our / max) * 100);
+        const avgPct = Math.min(100, (avg / max) * 100);
+        priceCmp = `
+            <div class="price-cmp">
+                <div class="pc-row"><span>Avg по категории: ${Math.round(avg).toLocaleString('ru-RU')} сум</span><span>Наш: ${Math.round(our).toLocaleString('ru-RU')} сум</span></div>
+                <div class="pc-bar" style="margin-top:18px">
+                    <div class="pc-mark" style="left:${avgPct}%">avg ↓</div>
+                    <div class="pc-fill" style="width:${ourPct}%"></div>
+                    <div class="pc-avg" style="left:${avgPct}%"></div>
+                </div>
+            </div>`;
+    }
+
+    document.getElementById('result').innerHTML = `
+      <div class="score-hero ${cls}">
+        <div class="score-ring">
+            <svg width="160" height="160" viewBox="0 0 160 160">
+                <circle class="bg" cx="80" cy="80" r="${RING_R}" stroke-width="10" fill="none" />
+                <circle class="fg" cx="80" cy="80" r="${RING_R}" stroke-width="10" fill="none"
+                        stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC}" />
+            </svg>
+            <div class="score-text">
+                <div class="num">${score}</div>
+                <div class="of">/ 100</div>
+            </div>
+        </div>
+        <div class="score-info">
+            <span class="badge-zone"><i class="fas ${cls === 'red' ? 'fa-fire' : cls === 'amber' ? 'fa-triangle-exclamation' : 'fa-shield-halved'}"></i> ${zoneTxt}</span>
+            <h2>${(t.title || '').slice(0, 120)}${(t.title || '').length > 120 ? '…' : ''}</h2>
+            <p>${verdict}</p>
+            <div class="lot-meta">
+                <span><i class="fas fa-hashtag"></i> Лот <b>${t.lot_id || '—'}</b></span>
+                <span><i class="fas fa-calendar"></i> <b>${t.date || '—'}</b></span>
+                <span><i class="fas fa-tags"></i> <b>${t.category || '—'}</b></span>
+            </div>
+        </div>
+      </div>
+
+      <div class="flags-grid">
+        ${flagDefs.map(f => `
+            <div class="flag-card ${flags[f.id] ? 'fired' : ''}">
+              <div class="fc-head">
+                <div class="fc-icon"><i class="fas ${f.icon}"></i></div>
+                <div class="fc-title">${flags[f.id] ? '🚨 ' : ''}${f.title}</div>
+                <span class="fc-pts">${f.pts}</span>
+              </div>
+              <div class="fc-why">${f.why}</div>
+            </div>`).join('')}
+      </div>
+
+      <div class="meta-panel">
+        <h3>Метаданные</h3>
+        <div class="meta-grid">
+          <div class="m"><div class="k">Заказчик ИНН</div><div class="v">${t.customer_tin || '—'}<br><span style="color:var(--text-dim);font-size:11px">${t.customer_name || ''}</span></div></div>
+          <div class="m"><div class="k">Победитель ИНН</div><div class="v">${t.winner_tin || '—'}<br><span style="color:var(--text-dim);font-size:11px">${t.winner_name || ''}</span></div></div>
+          <div class="m"><div class="k">Сумма</div><div class="v">${fmtUzs(t.amount_uzs)}<br><span style="color:var(--accent-cyan);font-size:11px">${fmtUsd(t.amount_usd)}</span></div></div>
+          <div class="m"><div class="k">Способ закупки</div><div class="v" style="font-size:11px">${t.purchase_method || '—'}</div></div>
+        </div>
+        ${priceCmp}
+      </div>
+
+      <div class="ai-panel">
+        <div class="ai-header">
+            <div class="ai-indicator"></div>
+            <h3>Intelligence Officer · KUS</h3>
+            <span class="ai-tag">Claude Sonnet</span>
+            <button class="btn btn-primary btn-sm" id="aiBtn" onclick="explain(${t.id})" style="margin-left:auto">
+                <i class="fas fa-wand-magic-sparkles"></i> Объяснить простым языком
+            </button>
+        </div>
+        <div class="ai-body" id="aiBody">
+            <div class="ai-placeholder">Нажми кнопку — модель проанализирует флаги и напишет нарратив для гражданина или журналиста.</div>
+        </div>
+      </div>`;
+
+    // animate ring
+    setTimeout(() => {
+        const fg = document.querySelector('.score-ring .fg');
+        if (fg) fg.setAttribute('stroke-dashoffset', String(offset));
+    }, 100);
+}
+
+async function explain(tenderId, force=false) {
+    const btn = document.getElementById('aiBtn');
+    const out = document.getElementById('aiBody');
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Анализ…';
+    out.innerHTML = '<div class="chat-msg system"><i class="fas fa-spinner fa-spin"></i> Модель читает факты по тендеру…</div>';
+    try {
+        const res = await fetch('/api/tenders/' + tenderId + '/explain' + (force ? '?force=true' : ''), { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.detail || ('HTTP ' + res.status));
+        out.innerHTML = `<div class="chat-msg assistant">${data.narrative}</div>
+            <div class="ai-meta-row">${data.cached ? 'из кеша' : 'сгенерировано Claude'} · <a onclick="explain(${tenderId}, true)">перегенерировать</a></div>`;
+    } catch (e) {
+        out.innerHTML = `<div class="chat-msg system">Ошибка: ${e.message}<br><br>Если ANTHROPIC_API_KEY не задан в backend/.env — добавь и перезапусти сервер.</div>`;
+    }
+    btn.disabled = false; btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Объяснить простым языком';
+}
+
+document.getElementById('qInput').addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
+</script>
+{% endblock %}

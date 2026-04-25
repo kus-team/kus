@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% set active_page = "graph" %}
+{% block title %}Граф связей{% endblock %}
+
+{% block head %}
+<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="graph-page">
+    <div class="page-header">
+        <div>
+            <h1>Граф «заказчик ↔ победитель»</h1>
+            <p class="subtitle">Толщина ребра — число побед. Цвет узла-победителя — средний риск-скор. «Звёзды» = кластеры монополизации.</p>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center">
+            <label style="color:var(--text-secondary); font-size:11px; font-family:var(--font-mono); text-transform:uppercase; letter-spacing:1px;">Min wins:</label>
+            <select id="minWins" onchange="reload()" class="form-control" style="width: 100px;">
+                <option value="2">2+</option>
+                <option value="3">3+</option>
+                <option value="5" selected>5+</option>
+                <option value="10">10+</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="graph-container" id="graphWrap">
+        <!-- HUD overlays -->
+        <div class="graph-scanline"></div>
+        <div class="graph-hud-bl"></div>
+        <div class="graph-hud-coords" id="graphCoords">NODES: 0 | EDGES: 0</div>
+        <div class="graph-hud-status"><div class="hud-dot"></div> LIVE</div>
+        <div class="graph-canvas" id="graphCanvas"></div>
+        <div class="graph-toolbar">
+            <button class="btn btn-secondary btn-sm" onclick="fitGraph()" title="Подогнать">
+                <i class="fas fa-expand"></i>
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="togglePhysics()" title="Физика вкл/выкл">
+                <i class="fas fa-atom"></i>
+            </button>
+        </div>
+        <div class="graph-controls">
+            <button class="btn btn-secondary btn-icon btn-sm" onclick="zoom(1.25)"><i class="fas fa-plus"></i></button>
+            <button class="btn btn-secondary btn-icon btn-sm" onclick="zoom(0.8)"><i class="fas fa-minus"></i></button>
+        </div>
+    </div>
+
+    <div class="legend">
+        <span><span class="dot" style="background:#3498db"></span> Заказчик (ромб)</span>
+        <span><span class="dot" style="background:#27ae60"></span> Победитель · низкий риск</span>
+        <span><span class="dot" style="background:#e67e22"></span> Победитель · средний риск</span>
+        <span><span class="dot" style="background:#e74c3c"></span> Победитель · высокий риск</span>
+    </div>
+</div>
+
+<style>
+.graph-page { max-width: 1500px; margin: 0 auto; padding: 24px; height: calc(100vh - 56px); display: flex; flex-direction: column; gap: 12px; }
+.page-header { display: flex; justify-content: space-between; align-items: center; }
+.page-header h1 { font-family: var(--font-mono); font-size: 22px; }
+.page-header .subtitle { color: var(--text-secondary); font-size: 13px; margin-top: 4px; }
+.graph-container { flex: 1; min-height: 60vh; border: 1px solid var(--border); border-radius: var(--radius-lg); }
+.legend { display: flex; gap: 20px; align-items: center; padding: 12px 16px; background: var(--bg-elevated); border-radius: var(--radius); font-size: 11px; color: var(--text-secondary); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; }
+.legend .dot { display:inline-block; width:10px; height:10px; border-radius:50%; vertical-align:middle; margin-right:8px; box-shadow: 0 0 8px currentColor; }
+.form-control { background: var(--bg-input); border: 1px solid var(--border); color: var(--text-primary); padding: 8px 12px; border-radius: var(--radius); font-family: var(--font-mono); font-size: 12px; }
+.graph-container::before { content: 'KUS NETWORK · ИНДЕКС РИСКА КОРРУПЦИИ'; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let network = null;
+let physicsEnabled = true;
+
+async function reload() {
+    const min = document.getElementById('minWins').value;
+    document.getElementById('graphCoords').textContent = 'LOADING...';
+    try {
+        const data = await api(`/api/graph/network?min_wins=${min}&limit_pairs=300`);
+        document.getElementById('graphCoords').textContent =
+            `NODES: ${data.nodes.length} | EDGES: ${data.edges.length} | PAIRS: ${data.pairs}`;
+        const container = document.getElementById('graphCanvas');
+        const options = {
+            nodes: { font: { color: '#edf2f7', size: 11, face: 'JetBrains Mono' }, borderWidth: 2 },
+            edges: {
+                smooth: { type: 'continuous' },
+                scaling: { min: 1, max: 10, label: false },
+                arrows: { to: { enabled: false } },
+                selectionWidth: 3,
+            },
+            physics: {
+                enabled: physicsEnabled,
+                stabilization: { iterations: 200 },
+                barnesHut: { gravitationalConstant: -12000, springLength: 140, springConstant: 0.04 },
+            },
+            interaction: { hover: true, tooltipDelay: 100 },
+        };
+        network = new vis.Network(container, data, options);
+        network.on('click', (params) => {
+            if (params.nodes.length) {
+                const id = params.nodes[0];
+                if (id.startsWith('w:')) {
+                    window.location.href = '/companies/' + encodeURIComponent(id.slice(2));
+                }
+            }
+        });
+    } catch (e) {
+        document.getElementById('graphCoords').textContent = 'ERROR: ' + e.message;
+    }
+}
+function fitGraph() { if (network) network.fit({ animation: { duration: 600, easingFunction: 'easeInOutQuad' } }); }
+function togglePhysics() { physicsEnabled = !physicsEnabled; if (network) network.setOptions({ physics: { enabled: physicsEnabled } }); }
+function zoom(f) { if (network) network.moveTo({ scale: network.getScale() * f, animation: { duration: 300 } }); }
+reload();
+</script>
+{% endblock %}

@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% set active_page = "companies" %}
+{% block title %}Компании{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h1><i class="fas fa-building"></i> Компании-победители</h1>
+            <p class="subtitle">Топ по числу выигранных подозрительных тендеров. Кликни на карточку — профиль компании.</p>
+        </div>
+    </div>
+
+    <div class="filters">
+        <input type="text" id="fQ" placeholder="Поиск по ИНН или названию…" />
+        <select id="fSort">
+            <option value="red">Сорт: красных побед ↓</option>
+            <option value="wins">Сорт: всего побед ↓</option>
+            <option value="total">Сорт: сумма ↓</option>
+            <option value="risk">Сорт: avg risk ↓</option>
+        </select>
+        <button class="btn btn-primary" onclick="loadAll()"><i class="fas fa-search"></i> Применить</button>
+    </div>
+
+    <div class="company-grid" id="grid">
+        <div class="skel">Загрузка…</div>
+    </div>
+</div>
+
+<style>
+.page { max-width: 1400px; margin: 0 auto; padding: 32px 24px; }
+.page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 24px; }
+.page-header h1 { font-family: var(--font-mono); font-size: 24px; display: flex; align-items: center; gap: 12px; }
+.page-header h1 i { color: var(--accent-red-dim); }
+.page-header .subtitle { color: var(--text-secondary); font-size: 13px; margin-top: 4px; }
+
+.filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 24px; }
+.filters input, .filters select {
+    background: var(--bg-input); border: 1px solid var(--border); color: var(--text-primary);
+    padding: 10px 14px; border-radius: var(--radius); font-size: 13px;
+    font-family: var(--font-ui); min-width: 220px;
+}
+.filters input:focus, .filters select:focus { outline: none; border-color: var(--accent-red-dim); }
+
+.company-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+.skel { color: var(--text-dim); font-size: 12px; padding: 40px; text-align: center; grid-column: 1 / -1; }
+
+.company-card {
+    background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+    padding: 22px; cursor: pointer; transition: all .25s; position: relative; overflow: hidden;
+    opacity: 0; transform: translateY(8px); animation: cardFade .4s forwards;
+}
+@keyframes cardFade { to { opacity: 1; transform: translateY(0); } }
+.company-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent-red), transparent);
+    opacity: 0.4; transition: opacity .25s;
+}
+.company-card:hover { transform: translateY(-4px); border-color: var(--accent-red-dim); box-shadow: 0 12px 36px rgba(192,57,43,0.18); }
+.company-card:hover::before { opacity: 1; }
+.cc-head { display: flex; gap: 14px; align-items: center; margin-bottom: 16px; }
+.cc-avatar {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent-red) 0%, var(--accent-red-dim) 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-weight: 700; color: white; font-size: 15px; flex-shrink: 0;
+    box-shadow: 0 4px 14px rgba(192,57,43,0.3);
+}
+.cc-name { font-size: 14px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc-tin { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+.cc-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 12px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.cc-stats .s-val { font-family: var(--font-mono); font-size: 20px; font-weight: 700; color: var(--text-primary); }
+.cc-stats .s-lab { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+.cc-stats .red b { color: #ff6f61; }
+.cc-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 14px; }
+.cc-foot .risk-pill {
+    font-family: var(--font-mono); font-size: 12px; font-weight: 700; padding: 4px 12px; border-radius: 20px;
+}
+.cc-foot .risk-pill.red { background: rgba(231,76,60,0.18); color: #ff6f61; }
+.cc-foot .risk-pill.amber { background: rgba(230,126,34,0.18); color: var(--accent-amber); }
+.cc-foot .risk-pill.green { background: rgba(39,174,96,0.18); color: var(--success); }
+.cc-foot .arrow { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); transition: color .2s, transform .2s; }
+.company-card:hover .arrow { color: var(--accent-red); transform: translateX(4px); }
+.cc-bar { height: 6px; background: var(--bg-input); border-radius: 3px; overflow: hidden; margin-top: 12px; }
+.cc-bar > div { height: 100%; background: linear-gradient(90deg, var(--success), var(--accent-amber), #e74c3c); border-radius: 3px; transition: width 1s; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let allCompanies = [];
+
+async function loadAll() {
+    const root = document.getElementById('grid');
+    root.innerHTML = '<div class="skel">Загрузка…</div>';
+    try {
+        const r = await api('/api/analytics/top-risky-companies?limit=100');
+        allCompanies = r.data || [];
+        render();
+    } catch (e) {
+        root.innerHTML = '<div class="skel">Ошибка: ' + e.message + '</div>';
+    }
+}
+
+function render() {
+    const q = document.getElementById('fQ').value.trim().toLowerCase();
+    const sort = document.getElementById('fSort').value;
+    let list = allCompanies.slice();
+    if (q) list = list.filter(c => (c.winner_tin || '').includes(q) || (c.winner_name || '').toLowerCase().includes(q));
+    list.sort((a, b) => {
+        if (sort === 'red')   return (b.red_wins || 0) - (a.red_wins || 0);
+        if (sort === 'wins')  return (b.wins || 0) - (a.wins || 0);
+        if (sort === 'total') return (+b.total_usd) - (+a.total_usd);
+        if (sort === 'risk')  return (+b.avg_risk) - (+a.avg_risk);
+        return 0;
+    });
+
+    const root = document.getElementById('grid');
+    if (!list.length) { root.innerHTML = '<div class="skel">Не найдено</div>'; return; }
+    root.innerHTML = list.map((c, i) => {
+        const initials = (c.winner_name || c.winner_tin || '?').replace(/[^A-ZА-Я0-9]/gi, '').slice(0, 2).toUpperCase() || '··';
+        const risk = Math.round(c.avg_risk || 0);
+        const riskCls = risk >= 70 ? 'red' : risk >= 30 ? 'amber' : 'green';
+        return `
+        <div class="company-card" style="animation-delay:${i * 35}ms"
+             onclick="window.location.href='/companies/${encodeURIComponent(c.winner_tin)}'">
+            <div class="cc-head">
+                <div class="cc-avatar">${initials}</div>
+                <div style="flex:1; min-width:0">
+                    <div class="cc-name" title="${c.winner_name || c.winner_tin}">${c.winner_name || '— название не указано —'}</div>
+                    <div class="cc-tin">ИНН ${c.winner_tin}</div>
+                </div>
+            </div>
+            <div class="cc-stats">
+                <div><div class="s-val">${c.wins}</div><div class="s-lab">побед</div></div>
+                <div class="red"><div class="s-val"><b>${c.red_wins}</b></div><div class="s-lab">красных</div></div>
+                <div><div class="s-val">${fmtUsd(c.total_usd)}</div><div class="s-lab">сумма</div></div>
+            </div>
+            <div class="cc-bar"><div style="width:${Math.min(100, risk)}%"></div></div>
+            <div class="cc-foot">
+                <span class="risk-pill ${riskCls}">avg risk ${risk}</span>
+                <span class="arrow">профиль →</span>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+document.getElementById('fQ').addEventListener('input', render);
+document.getElementById('fSort').addEventListener('change', render);
+loadAll();
+</script>
+{% endblock %}

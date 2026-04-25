@@ -1,0 +1,260 @@
+[
+  {
+    "struct_id": "613eeda614665dbb8ec80453",
+    "code": "1-001-0008",
+    "title_en": "Information about public procurement, including goods (works, services) purchased by persons engaged in public procurement under direct contracts.",
+    "org_en": "The Ministry of Economy and Finance of the Republic of Uzbekistan",
+    "update_date": "2026-03-03",
+    "score": 14,
+    "field_count": 12,
+    "sample_rows": 98,
+    "match_fields": [
+      "BuyurtmachiSTIRraqami",
+      "Predmetimahsulotishxizmat",
+      "Kategoriyasi",
+      "Lotraqami",
+      "Shartnomaraqami",
+      "Shartnomasanasi",
+      "Shartnomaqiymati"
+    ]
+  },
+  {
+    "struct_id": "6142ef46ba3615f6f07bca0f",
+    "code": "3-005-0031",
+    "title_en": "Information about public procurement, including goods (works, services) purchased by persons engaged in public procurement under direct contracts.",
+    "org_en": "Agency for Management of State Assets of the Republic of Uzbekistan",
+    "update_date": "2026-04-23",
+    "score": 12,
+    "field_count": 13,
+    "sample_rows": 19,
+    "match_fields": [
+      "BuyurtmachiSTIRraqami",
+      "Kategoriyasi",
+      "Lotraqami",
+      "Shartnomaraqami",
+      "Shartnomasanasi",
+      "Shatrnomaqiymati"
+    ]
+  },
+  {
+    "struct_id": "64dc981eb04a41cb2e29d57b",
+    "code": "1-001-0029",
+    "title_en": "All contests and tenders of state bodies",
+    "org_en": "The Ministry of Economy and Finance of the Republic of Uzbekistan",
+    "update_date": "2026-03-12",
+    "score": 12,
+    "field_count": 11,
+    "sample_rows": 294,
+    "match_fields": [
+      "BuyurtmachiningSTIRraqami",
+      "Xaridpredmetimahsulotishxizmat",
+      "Kategoriyasi",
+      "Lotraqami",
+      "Shartnomaraqami",
+      "Xaridboshlangichqiymatimingsomda"
+    ]
+  },
+  {
+    "struct_id": "6225c27ed31e97c0521ec8a1",
+    "code": "6-009-0027",
+    "title_en": "Information on the winners of the open competition for the right to lease agricultural land.",
+    "org_en": "Khokimiyat of Surkhandarya region",
+    "update_date": "2026-03-10",
+    "score": 12,
+    "field_count": 11,
+    "sample_rows": 302,
+    "match_fields": [
+      "Toifasi",
+      "Boshlangichnarx",
+      "Sotilgannarx",
+      "Lotraq",
+      "Auksionsana",
+      "Lotholati"
+    ]
+  },
+  {
+    "struct_id": "61137447db32b99538e086fc",
+    "code": "4-019-0010",
+    "title_en": "Information on public procurement carried out by Almalyk Mining and Metallurgical Complex JSC",
+    "org_en": "Almalyk mining and metallugical complex JSC",
+    "update_date": "2026-04-23",
+    "score": 10,
+    "field_count": 13,
+    "sample_rows": 1982,
+    "match_fields": [
+      "LotRaqami",
+      "ShartnomaRaqami",
+      "Sana",
+      "Summa",
+      "SummaSomda"
+    ]
+  },
+  {
+    "struct_id": "613854e512027c00f822b040",
+    "code": "6-011-0022",
+    "title_en": "Information about public procurement, including goods (works, services) purchased by persons engaged in public procurement under direct contracts.",
+    "org_en": "Khokimiyat of Tashkent region",
+    "update_date": "2026-02-24",
+    "score": 10,
+    "field_count": 11,
+    "sample_rows": 0,
+    "match_fields": [
+      "BuyurtmachiningSTIRrakami",
+      "Xaridpredmetimaxsulotishxizmat",
+      "Kategoriyasi",
+      "Lotrakami",
+      "Shartnomarakamivasanasi"
+    ]
+  },
+  {
+    "struct_id": "613ef3ee14665dbb8ec80460",
+    "code": "1-003-0024",
+    "title_en": "Information on public procurement, including goods (works, services) purchased by persons engaged in public procurement under direct contracts",
+    "org_en": "Ministry of Transport Republic of Uzbekistan",
+    "update_date": "2026-03-30",
+    "score": 10,
+    "field_count": 11,
+    "sample_rows": 0,
+    "match_fields": [
+      "BuyurtmachiningSTIRraqami",
+      "Predmetimahsulotishxizmat",
+      "Lotraqami",
+      "Shartnomaraqamivasanasi",
+      "Shartnomaqiymati"
+    ]
+  },
+  {
+    "struct_id": "613efcf714665dbb8ec804b3",
+    "code": "1-007-0040",
+    "title_en": "Information on public procurement, including goods (works, services) purchased by persons engaged in public procurement under direct contracts",
+    "org_en": "Ministry of Health of the Republic of Uzbekistan",
+    "update_date": "2026-02-16",
+    "score": 10,
+    "field_count": 9,
+    "sample_rows": 0,
+    "match_fields": [
+      "Contractor",
+      "Lot",
+      "number",
+      "data",
+      "summa"
+    ]
+  },
+  {
+    "struct_id": "613f1d7214665dbb8ec804c7",
+    "code": "1-010-0012",
+    "title_en": "Information on public procurement, including goods (works, services) purchased by persons engaged in public procurement under direct contracts",
+    "org_en": "Ministry of Construction and Housing and Communal Services of the Republic of Uzbekistan",
+    "update_date": "2025-12-29",
+    "score": 10,
+    "field_count": 9,
+    "sample_rows": 0,
+    "match_fields": [
+      "Lotraqami",
+      "Pudratchitogrisidagimalumot",
+      "Xaridqilingantovarvaxizmatlarmiqdori",
+      "Bitimboyichatovarvaxizmatlarnarxi",
+      "Xardiqilingantovarvaxizmatlarjamimiqdori"
+    ]
+  },
+  {
+    "struct_id": "613f2cdd14665dbb8ec80615",
+    "code": "1-013-0015",
+    "title_en": "Information on public procurement, including goods (works, services) purchased by persons engaged in public procurement under direct contracts",
+    "org_en": "Ministry of Digital Technologies of the Republic of Uzbekistan",
+    "update_date": "2026-03-11",
+    "score": 10,
+    "field_count": 9,
+    "sample_rows": 0,
+    "match_fields": [
+      "Nameofproduct",
+      "ProductQuantity",
+      "Price",
+      "Amount",
+      "Contractdate"
+    ]
+  },
+  {
+    "struct_id": "613f359314665dbb8ec8062d",
+    "code": "1-015-0014",
+    "title_en": "Information on public procurement, including goods (works, services) purchased by persons engaged in public procurement under direct contracts",
+    "org_en": "Ministry of Culture of the Republic of Uzbekistan",
+    "update_date": "2026-02-04",
+    "score": 10,
+    "field_count": 7,
+    "sample_rows": 0,
+    "match_fields": [
+      "Lotraqami",
+      "Shartnomaraqami",
+      "Narxi",
+      "Jami",
+      "Tafsilotlar"
+    ]
+  },
+  {
+    "struct_id": "61680320ec71c8d084498218",
+    "code": "6-011-0027",
+    "title_en": "Information about the winners of the open tender for the right to lease agricultural land.",
+    "org_en": "Khokimiyat of Tashkent region",
+    "update_date": "2026-03-03",
+    "score": 10,
+    "field_count": 11,
+    "sample_rows": 0,
+    "match_fields": [
+      "Golibturi",
+      "Lotraqami",
+      "Bayonnomasanasi",
+      "GolibFIO",
+      "Yermaydoni"
+    ]
+  },
+  {
+    "struct_id": "61430fa1ba3615f6f07bcaa4",
+    "code": "3-007-0007",
+    "title_en": "Information about public procurement, including goods (works, services) purchased by persons engaged in public procurement under direct contracts.",
+    "org_en": "Agency for Youth Affairs of the Republic of Uzbekistan",
+    "update_date": "2026-02-28",
+    "score": 10,
+    "field_count": 9,
+    "sample_rows": 0,
+    "match_fields": [
+      "shartnomaraqami",
+      "pudratchinomi",
+      "Korxonastiri",
+      "narxi",
+      "umumiynarx"
+    ]
+  },
+  {
+    "struct_id": "6107d14e2a2e256d868e86dc",
+    "code": "1-014-0007",
+    "title_en": "Information on public procurement carried out at the expense of budgetary and extra-budgetary funds of the Ministry of Justice of the Republic of Uzbekistan",
+    "org_en": "Ministry of Justice of the Republic of Uzbekistan",
+    "update_date": "2026-03-12",
+    "score": 8,
+    "field_count": 12,
+    "sample_rows": 0,
+    "match_fields": [
+      "Shartnomaraqami",
+      "Pudratchi",
+      "narxi",
+      "summasi"
+    ]
+  },
+  {
+    "struct_id": "6107f1f32a2e256d868e8774",
+    "code": "1-017-0013",
+    "title_en": "Reports on public procurement conducted by the Preschool Education Agency",
+    "org_en": "Agency of Preschool Education under the Ministry of Preschool and School Education of the Republic of Uzbekistan",
+    "update_date": "2024-04-29",
+    "score": 8,
+    "field_count": 12,
+    "sample_rows": 0,
+    "match_fields": [
+      "Lotshartnomaraqami",
+      "Pudratchinomi",
+      "Bitimshartnomaboyichatovarlarxizmatlarbirbirliginarxitarifi",
+      "Xaridqilingantovarlarxizmatlarjamimiqdorihajmiqiymatimingsom"
+    ]
+  }
+]
