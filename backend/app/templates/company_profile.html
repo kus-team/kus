@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+{% set active_page = "companies" %}
+{% block title %}Профиль компании{% endblock %}
+
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+<script src="https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="page" id="page" data-tin="{{ tin }}">
+    <a href="/companies" class="back-link"><i class="fas fa-arrow-left"></i> ко всем компаниям</a>
+
+    <div id="hero" class="hero-card hero-skel">
+        <div class="skel-text">Загрузка профиля компании ИНН {{ tin }}…</div>
+    </div>
+
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <div class="cp-grid">
+        <div class="panel">
+            <div class="panel-h">
+                <h2><i class="fas fa-chart-line"></i> Победы по месяцам</h2>
+                <span class="panel-tag" id="tlTotal">—</span>
+            </div>
+            <div style="height: 280px;"><canvas id="timelineChart"></canvas></div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-h">
+                <h2><i class="fas fa-share-nodes"></i> Связи с заказчиками</h2>
+                <span class="panel-tag" id="grTotal">—</span>
+            </div>
+            <div id="miniGraph" class="mini-graph"></div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-h">
+            <h2><i class="fas fa-tags"></i> Топ категорий</h2>
+        </div>
+        <div class="cat-pills" id="catPills"></div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-h">
+            <h2><i class="fas fa-receipt"></i> Контракты (последние 50)</h2>
+            <span class="panel-tag" id="ctrTotal">—</span>
+        </div>
+        <table class="ctr-table" id="ctrTable">
+            <thead><tr>
+                <th>Risk</th><th>Дата</th><th>Заказчик</th><th>Название</th>
+                <th class="num">UZS</th><th class="num">USD</th>
+            </tr></thead>
+            <tbody><tr><td colspan="6" class="skel-cell">Загрузка…</td></tr></tbody>
+        </table>
+    </div>
+</div>
+
+<style>
+.page { max-width: 1400px; margin: 0 auto; padding: 24px 24px 48px; }
+.back-link { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px; transition: color .2s; }
+.back-link:hover { color: var(--accent-cyan); }
+.skel-text, .skel-cell { color: var(--text-dim); font-size: 13px; padding: 24px; text-align: center; }
+
+/* HERO */
+.hero-card {
+    position: relative; padding: 32px; margin-bottom: 24px; overflow: hidden;
+    background: rgba(18,25,41,0.82); backdrop-filter: blur(12px);
+    border: 1px solid var(--border-light); border-radius: var(--radius-lg);
+}
+.hero-card.hero-skel { min-height: 120px; display: flex; align-items: center; justify-content: center; }
+.hero-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent-red), var(--accent-cyan), transparent); }
+.hero-row { display: flex; gap: 24px; align-items: center; }
+.hero-avatar {
+    width: 90px; height: 90px; border-radius: 16px;
+    background: linear-gradient(135deg, var(--accent-red) 0%, var(--accent-red-dim) 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-weight: 700; color: white; font-size: 28px;
+    box-shadow: 0 8px 24px rgba(192,57,43,0.35); flex-shrink: 0;
+}
+.hero-info { flex: 1; min-width: 0; }
+.hero-info h1 { font-family: var(--font-mono); font-size: 26px; line-height: 1.2; color: var(--text-primary); margin-bottom: 8px; }
+.hero-info .h-tin { font-family: var(--font-mono); font-size: 12px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; }
+.hero-info .h-meta { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 12px; font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); }
+.hero-info .h-meta b { color: var(--text-primary); }
+.hero-risk { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.hero-risk .risk-num { font-family: var(--font-mono); font-size: 42px; font-weight: 700; line-height: 1; }
+.hero-risk .risk-num.red    { color: #ff6f61; }
+.hero-risk .risk-num.amber  { color: var(--accent-amber); }
+.hero-risk .risk-num.green  { color: var(--success); }
+.hero-risk .risk-lab { font-family: var(--font-mono); font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; }
+
+/* KPI */
+.kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
+@media (max-width: 1100px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
+.kpi-mini {
+    background: rgba(18,25,41,0.78); backdrop-filter: blur(8px);
+    border: 1px solid var(--border-light); border-radius: var(--radius);
+    padding: 14px 16px; position: relative; overflow: hidden;
+}
+.kpi-mini::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background: linear-gradient(90deg, currentColor, transparent); opacity: 0.7; }
+.kpi-mini.red  { color: #e74c3c; }
+.kpi-mini.amber{ color: var(--accent-amber); }
+.kpi-mini.cyan { color: var(--accent-cyan); }
+.kpi-mini.blue { color: var(--accent-blue); }
+.kpi-mini .kpi-v { font-family: var(--font-mono); font-size: 22px; font-weight: 700; color: var(--text-primary); }
+.kpi-mini .kpi-l { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+
+/* Grid panels */
+.cp-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; margin-bottom: 16px; }
+@media (max-width: 1100px) { .cp-grid { grid-template-columns: 1fr; } }
+.panel {
+    background: rgba(18,25,41,0.82); backdrop-filter: blur(12px);
+    border: 1px solid var(--border-light); border-radius: var(--radius-lg);
+    padding: 20px; margin-bottom: 16px;
+}
+.panel-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.panel-h h2 { font-family: var(--font-mono); font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
+.panel-h h2 i { color: var(--accent-red-dim); }
+.panel-tag { font-family: var(--font-mono); font-size: 10px; padding: 3px 10px; border-radius: 10px; background: var(--bg-elevated); color: var(--text-dim); letter-spacing: 1px; }
+
+/* Mini graph */
+.mini-graph { height: 280px; background: var(--bg-dark); border-radius: var(--radius); border: 1px solid var(--border); }
+
+/* Cat pills */
+.cat-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.cat-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 16px; font-size: 12px; color: var(--text-primary); }
+.cat-pill .cp-n { font-family: var(--font-mono); font-size: 10px; color: var(--accent-cyan); background: rgba(0,172,193,0.12); padding: 2px 8px; border-radius: 8px; }
+
+/* Table */
+.ctr-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ctr-table th { text-align: left; color: var(--text-dim); font-weight: 500; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; padding: 10px 12px; border-bottom: 1px solid var(--border); font-family: var(--font-mono); }
+.ctr-table td { padding: 12px; border-bottom: 1px solid var(--border); }
+.ctr-table tr:hover td { background: var(--bg-surface-hover); cursor: pointer; }
+.ctr-table .num { text-align: right; font-family: var(--font-mono); }
+.ctr-table .risk-pill { font-family: var(--font-mono); font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 10px; }
+.ctr-table .risk-pill.red   { background: rgba(231,76,60,0.18);  color: #ff6f61; }
+.ctr-table .risk-pill.amber { background: rgba(230,126,34,0.18); color: var(--accent-amber); }
+.ctr-table .risk-pill.green { background: rgba(39,174,96,0.18);  color: var(--success); }
+.ctr-table .flag-pill { display: inline-block; margin-right: 4px; padding: 2px 6px; border-radius: 4px; font-size: 9px; background: rgba(231,76,60,0.15); color: #ff6f61; font-family: var(--font-mono); }
+code { font-family: var(--font-mono); color: var(--text-secondary); font-size: 11px; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const TIN = document.getElementById('page').dataset.tin;
+
+function clsForRisk(r) { return r >= 70 ? 'red' : r >= 30 ? 'amber' : 'green'; }
+function flagPills(flags) {
+    return [
+        flags.monopoly   ? '<span class="flag-pill">МОНОПОЛИЯ</span>' : '',
+        flags.no_compete ? '<span class="flag-pill">БЕЗ КОНКУРСА</span>' : '',
+        flags.overpriced ? '<span class="flag-pill">ПЕРЕПЛАТА</span>' : '',
+    ].join('');
+}
+
+(async () => {
+    let data;
+    try {
+        data = await api('/api/company/' + encodeURIComponent(TIN));
+    } catch (e) {
+        document.getElementById('hero').innerHTML = `<div class="skel-text" style="color:#ff6f61">Не найдено: ${e.message}</div>`;
+        return;
+    }
+    const s = data.summary;
+    const initials = (s.name || s.winner_tin || '?').replace(/[^A-ZА-Я0-9]/gi, '').slice(0, 2).toUpperCase() || '··';
+
+    // ===== HERO =====
+    const avgRisk = data.recent.length
+        ? Math.round(data.recent.reduce((a, t) => a + (+t.risk_score || 0), 0) / data.recent.length)
+        : 0;
+    const cls = clsForRisk(avgRisk);
+    document.getElementById('hero').classList.remove('hero-skel');
+    document.getElementById('hero').innerHTML = `
+        <div class="hero-row">
+            <div class="hero-avatar">${initials}</div>
+            <div class="hero-info">
+                <h1>${s.name || 'Юрлицо ИНН ' + s.winner_tin}</h1>
+                <div class="h-tin">ИНН ${s.winner_tin}</div>
+                <div class="h-meta">
+                    <span><i class="fas fa-calendar-day"></i> Первая победа: <b>${s.first_win || '—'}</b></span>
+                    <span><i class="fas fa-calendar"></i> Последняя: <b>${s.last_win || '—'}</b></span>
+                    <span><i class="fas fa-handshake"></i> Заказчиков: <b>${data.customers.length}</b></span>
+                </div>
+            </div>
+            <div class="hero-risk">
+                <div class="risk-num ${cls}">${avgRisk}</div>
+                <div class="risk-lab">avg risk</div>
+            </div>
+        </div>
+    `;
+
+    // ===== KPI =====
+    document.getElementById('kpiRow').innerHTML = `
+        <div class="kpi-mini blue"><div class="kpi-v">${s.wins}</div><div class="kpi-l">всего побед</div></div>
+        <div class="kpi-mini red"><div class="kpi-v">${s.red_wins}</div><div class="kpi-l">красная зона</div></div>
+        <div class="kpi-mini amber"><div class="kpi-v">${data.customers.length}</div><div class="kpi-l">заказчиков</div></div>
+        <div class="kpi-mini cyan"><div class="kpi-v">${fmtUzs(s.total_uzs)}</div><div class="kpi-l">сумма (UZS)</div></div>
+        <div class="kpi-mini cyan"><div class="kpi-v">${fmtUsd(s.total_usd)}</div><div class="kpi-l">сумма (USD)</div></div>
+    `;
+
+    // ===== TIMELINE =====
+    const tl = data.timeline || [];
+    document.getElementById('tlTotal').textContent = `${tl.length} мес. с активностью`;
+    if (tl.length) {
+        new Chart(document.getElementById('timelineChart'), {
+            type: 'bar',
+            data: {
+                labels: tl.map(x => x.bucket),
+                datasets: [
+                    { label: 'Побед', data: tl.map(x => +x.n), backgroundColor: 'rgba(0,172,193,0.55)', borderColor: '#00acc1', borderWidth: 1, borderRadius: 4 },
+                    { label: 'Красных', data: tl.map(x => +x.red || 0), backgroundColor: 'rgba(231,76,60,0.7)', borderRadius: 4 },
+                ],
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 9 } }, grid: { display: false }, stacked: true },
+                    y: { ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: 'rgba(30,42,58,0.3)' }, stacked: true, beginAtZero: true },
+                },
+                plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 11 } } } },
+            },
+        });
+    }
+
+    // ===== MINI GRAPH =====
+    const customers = data.customers || [];
+    document.getElementById('grTotal').textContent = `${customers.length} заказчиков`;
+    const winnerNode = { id: 'w:' + s.winner_tin, label: s.name || ('ИНН ' + s.winner_tin), color: '#e74c3c', shape: 'dot', size: 30, font: { color: '#fff', size: 13 } };
+    const nodes = [winnerNode];
+    const edges = [];
+    customers.forEach(c => {
+        const cid = 'c:' + c.customer_tin;
+        nodes.push({ id: cid, label: (c.customer_name || c.customer_tin || '?').slice(0, 36), color: '#3498db', shape: 'diamond', size: 18, font: { color: '#cbd5e1', size: 11 } });
+        edges.push({ from: cid, to: winnerNode.id, value: +c.wins, title: `${c.wins} побед · ${(+c.total_uzs/1e6).toFixed(0)} млн UZS`, color: { color: '#5a6a80' } });
+    });
+    new vis.Network(document.getElementById('miniGraph'), { nodes, edges }, {
+        physics: { stabilization: { iterations: 150 }, barnesHut: { gravitationalConstant: -8000, springLength: 110 } },
+        interaction: { hover: true, tooltipDelay: 80 },
+        edges: { smooth: { type: 'continuous' }, scaling: { min: 1, max: 8, label: false } },
+    });
+
+    // ===== CATEGORIES =====
+    const cats = data.categories || [];
+    document.getElementById('catPills').innerHTML = cats.map(c =>
+        `<span class="cat-pill" title="${c.category}">${(c.category || '').slice(0, 50)}${(c.category||'').length>50?'…':''} <span class="cp-n">${c.n}</span></span>`
+    ).join('') || '<span style="color:var(--text-dim);font-size:12px">Нет категорий</span>';
+
+    // ===== TABLE =====
+    const recent = data.recent || [];
+    document.getElementById('ctrTotal').textContent = `${recent.length} из ${s.wins}`;
+    const tbody = document.querySelector('#ctrTable tbody');
+    tbody.innerHTML = recent.map(t => {
+        const flags = t.risk_flags || {};
+        const cls = clsForRisk(t.risk_score || 0);
+        return `
+        <tr onclick="window.location.href='/tenders/${t.id}'">
+            <td><span class="risk-pill ${cls}">${t.risk_score ?? 0}</span><br>${flagPills(flags)}</td>
+            <td>${t.date || '—'}</td>
+            <td><code>${t.customer_tin || '—'}</code><br><span style="color:var(--text-dim);font-size:11px">${t.customer_name || ''}</span></td>
+            <td title="${t.title || ''}">${(t.title || '—').slice(0, 70)}${(t.title||'').length>70?'…':''}</td>
+            <td class="num">${fmtUzs(t.amount_uzs)}</td>
+            <td class="num" style="color:var(--accent-cyan)">${fmtUsd(t.amount_usd)}</td>
+        </tr>`;
+    }).join('') || '<tr><td colspan="6" class="skel-cell">Контрактов нет</td></tr>';
+})();
+</script>
+{% endblock %}

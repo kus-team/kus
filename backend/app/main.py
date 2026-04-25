@@ -77,7 +77,7 @@ def page_companies(request: Request):
 
 @app.get("/companies/{tin}", response_class=HTMLResponse)
 def page_company(request: Request, tin: str):
-    return templates.TemplateResponse("companies.html", {"request": request, "tin": tin})
+    return templates.TemplateResponse("company_profile.html", {"request": request, "tin": tin})
 
 
 @app.get("/check", response_class=HTMLResponse)
@@ -304,11 +304,33 @@ def company_profile(tin: str) -> dict[str, Any]:
         LIMIT 20
     """, {"tin": tin})
     recent = fetch_all("""
-        SELECT id, title, customer_name, amount_uzs, amount_usd, date, risk_score, risk_flags
+        SELECT id, title, customer_tin, customer_name, amount_uzs, amount_usd, date, category, risk_score, risk_flags, is_direct_purchase
         FROM tenders WHERE winner_tin = %(tin)s
-        ORDER BY date DESC LIMIT 20
+        ORDER BY date DESC LIMIT 50
     """, {"tin": tin})
-    return {"summary": summary, "customers": customers, "recent": recent}
+    # Timeline: группировка побед по месяцу
+    timeline = fetch_all("""
+        SELECT TO_CHAR(date, 'YYYY-MM') AS bucket,
+               COUNT(*)                        AS n,
+               COALESCE(SUM(amount_uzs), 0)    AS uzs,
+               SUM(CASE WHEN risk_score >= 70 THEN 1 ELSE 0 END) AS red
+        FROM tenders
+        WHERE winner_tin = %(tin)s AND date IS NOT NULL
+        GROUP BY 1
+        ORDER BY 1
+    """, {"tin": tin})
+    # Категории, в которых эта компания выигрывала
+    categories = fetch_all("""
+        SELECT category,
+               COUNT(*) AS n,
+               COALESCE(SUM(amount_uzs), 0) AS uzs
+        FROM tenders WHERE winner_tin = %(tin)s AND category IS NOT NULL AND category <> ''
+        GROUP BY category
+        ORDER BY n DESC
+        LIMIT 10
+    """, {"tin": tin})
+    return {"summary": summary, "customers": customers, "recent": recent,
+            "timeline": timeline, "categories": categories}
 
 
 # ------------------------------------------------------------------ AI narrative
