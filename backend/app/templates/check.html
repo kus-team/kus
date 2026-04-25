@@ -3,7 +3,7 @@
 {% block title %}Проверить тендер{% endblock %}
 
 {% block content %}
-<div class="page">
+<div class="page" id="page" data-prefill="{{ prefill_id or '' }}">
     <div class="page-header">
         <div>
             <h1><i class="fas fa-shield-halved"></i> Проверить тендер</h1>
@@ -13,7 +13,7 @@
 
     <div class="check-box">
         <i class="fas fa-search check-ico"></i>
-        <input type="text" id="qInput" placeholder="ID, Lot ID или ключевое слово…" autofocus>
+        <input type="text" id="qInput" placeholder="ID, Lot ID или ключевое слово…">
         <button class="btn btn-primary" onclick="check()"><i class="fas fa-bolt"></i> Проверить</button>
     </div>
     <div class="quick">
@@ -277,5 +277,16 @@ async function explain(tenderId, force=false) {
 }
 
 document.getElementById('qInput').addEventListener('keydown', e => { if (e.key === 'Enter') check(); });
+
+// Если страница открыта по /tenders/{id} — сразу подставить и проверить
+(function autoLoad() {
+    const prefill = document.getElementById('page').dataset.prefill;
+    if (prefill) {
+        document.getElementById('qInput').value = prefill;
+        check();
+    } else {
+        document.getElementById('qInput').focus();
+    }
+})();
 </script>
 {% endblock %}
