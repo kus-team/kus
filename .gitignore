@@ -34,6 +34,11 @@ data/explore/*.json
 pg/
 *.zip
 
+# Локальные утилиты (не для прода)
+paste.bat
+screen.png
+screen-*.png
+
 # Node modules (Playwright recon — исследовательский, не для прода)
 node_modules/
 scripts/xarid_recon/network*.log.json
