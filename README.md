@@ -145,6 +145,50 @@ backend/
     └── schema_sqlite.sql   SQLite fallback
 ```
 
+## Public API
+
+REST-документация (Swagger UI): **`/docs`** · OpenAPI JSON: **`/openapi.json`**
+
+Основные эндпоинты:
+
+```
+GET   /api/health                              health-check + кол-во тендеров
+GET   /api/tenders?q=&min_risk=&order=         поиск/листинг с фильтрами
+GET   /api/tenders/{id}                        один тендер с risk_flags
+GET   /api/tenders/{id}/similar                похожие по названию (pg_trgm)
+POST  /api/tenders/{id}/explain                AI-нарратив через Claude
+GET   /api/tenders/suspicious                  топ красных
+GET   /api/compare?a=X&b=Y                     side-by-side двух тендеров
+GET   /api/cases                               топ-кейсов «заказчик ↔ победитель»
+GET   /api/company/{tin}                       профиль компании
+GET   /api/graph/network?min_wins=             граф связей для vis.js
+GET   /api/analytics/stats                     KPI дашборда
+GET   /api/analytics/trends                    помесячная динамика
+GET   /api/analytics/heatmap                   категория × месяц
+GET   /api/analytics/by-category               распределение
+GET   /api/analytics/by-region                 регионы Узбекистана
+GET   /api/analytics/ministries                рейтинг госорганов
+GET   /api/analytics/top-risky-companies       топ компаний
+GET   /api/analytics/tender-of-week            самый красный за неделю
+GET   /api/live/xarid                          live-feed UZEX (5-мин кэш)
+GET   /api/export/tenders.csv?min_risk=        CSV экспорт
+```
+
+Все ответы — JSON. CORS открыт. Rate-limit мягкий. Для AI-narrative нужен `ANTHROPIC_API_KEY`.
+
+## Auto-обновление (GitHub Actions)
+
+`/.github/workflows/daily-ingest.yml` — раз в сутки (03:00 UTC = 08:00 Tashkent):
+1. Применяет миграции (`schema.sql`).
+2. Тянет свежие данные с egov.uz через loader.
+3. Пересчитывает `risk_score` для всех тендеров.
+4. Health-check продакшен URL.
+
+Для активации:
+- В Settings репо → **Secrets and variables → Actions** добавить:
+  - `DATABASE_URL` (secret) — production Postgres URL
+  - `PROD_URL` (variable) — публичный URL приложения, опционально
+
 ## Что планируется
 
 - [ ] Расширить ингест до всех 157 найденных датасетов (~50–100 тыс. контрактов)

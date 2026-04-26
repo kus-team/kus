@@ -75,6 +75,22 @@ CREATE TABLE IF NOT EXISTS ingest_log (
 CREATE INDEX IF NOT EXISTS idx_ingest_log_dataset ON ingest_log (source_dataset, started_at DESC);
 
 
+-- audit_log: кто что смотрел / какие жалобы инициировал / какие AI-объяснения сгенерированы.
+-- Не для модерации — для прозрачности и аналитики самой платформы.
+CREATE TABLE IF NOT EXISTS audit_log (
+    id          BIGSERIAL PRIMARY KEY,
+    action      TEXT NOT NULL,        -- 'view_tender' | 'view_check' | 'ai_explain' | 'complaint_open' | 'csv_export'
+    target      TEXT,                 -- ID тендера / company / etc.
+    ip          TEXT,                 -- может храниться или анонимизироваться по политике
+    user_agent  TEXT,
+    payload     JSONB,
+    ts          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log (action, ts DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_log_target ON audit_log (target);
+
+
 CREATE OR REPLACE FUNCTION touch_updated_at() RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = now();

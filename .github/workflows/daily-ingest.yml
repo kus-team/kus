@@ -1,0 +1,44 @@
+name: Daily ingest from data.egov.uz
+
+# Каждый день в 03:00 UTC (08:00 по Ташкенту) — загружаем свежие тендеры и пересчитываем риски.
+# Также можно запустить вручную через вкладку Actions → "Run workflow".
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+
+      - name: Apply schema (idempotent)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python -m backend.db.connection
+
+      - name: Load latest tenders
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python -m backend.ingest.loader
+
+      - name: Recalculate risk scores
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python -m backend.ingest.risk
+
+      - name: Health-check production URL
+        if: ${{ vars.PROD_URL != '' }}
+        run: |
+          curl -sf "${{ vars.PROD_URL }}/api/health" | tee /tmp/health.json
+          test "$(jq -r '.ok' /tmp/health.json)" = "true"

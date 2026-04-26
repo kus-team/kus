@@ -66,3 +66,16 @@ CREATE TABLE IF NOT EXISTS ingest_log (
 );
 
 CREATE INDEX IF NOT EXISTS idx_ingest_log_dataset ON ingest_log (source_dataset, started_at DESC);
+
+
+CREATE TABLE IF NOT EXISTS audit_log (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    action      TEXT NOT NULL,
+    target      TEXT,
+    ip          TEXT,
+    user_agent  TEXT,
+    payload     TEXT,
+    ts          TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_audit_log_action ON audit_log (action, ts DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_log_target ON audit_log (target);
