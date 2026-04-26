@@ -34,6 +34,11 @@ data/explore/*.json
 pg/
 *.zip
 
+# Node modules (Playwright recon — исследовательский, не для прода)
+node_modules/
+scripts/xarid_recon/network*.log.json
+scripts/xarid_recon/package-lock.json
+
 # OS
 .DS_Store
 Thumbs.db
