@@ -11,7 +11,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from backend.db.connection import connect
+from backend.db.connection import connect, dialect, month_bucket, json_extract_text, date_minus_days
 from backend.services.graph import build_network
 from backend.services.narrative import explain_tender
 
@@ -148,6 +148,24 @@ def fetch_all(sql: str, params: tuple | dict = ()) -> list[dict]:
         con.close()
 
 
+# --- Простой in-memory rate-limit для дорогих endpoints (AI и экспорт) ---
+import time as _time
+from collections import defaultdict, deque
+_rl_hits: dict[str, deque] = defaultdict(deque)
+
+
+def _rate_limited(key: str, *, limit: int, window_s: int) -> bool:
+    """True если уже превышен лимит за окно."""
+    now = _time.time()
+    q = _rl_hits[key]
+    while q and q[0] < now - window_s:
+        q.popleft()
+    if len(q) >= limit:
+        return True
+    q.append(now)
+    return False
+
+
 def audit(action: str, target: str | None = None, payload: dict | None = None, request: Request | None = None) -> None:
     """Лёгкий лог действий — best effort, никогда не падает."""
     try:
@@ -259,7 +277,7 @@ def suspicious_tenders(limit: int = Query(100, ge=1, le=500)) -> dict[str, Any]:
         "SELECT id, title, customer_name, winner_name, amount_uzs, amount_usd, "
         "       date, category, risk_score, risk_flags "
         "FROM tenders WHERE risk_score >= %s "
-        "ORDER BY risk_score DESC, amount_uzs DESC NULLS LAST LIMIT %s",
+        "ORDER BY risk_score DESC, amount_uzs DESC LIMIT %s",
         (RISK_RED, limit),
     )}
 
@@ -359,11 +377,11 @@ def company_profile(tin: str) -> dict[str, Any]:
     recent = fetch_all("""
         SELECT id, title, customer_tin, customer_name, amount_uzs, amount_usd, date, category, risk_score, risk_flags, is_direct_purchase
         FROM tenders WHERE winner_tin = %(tin)s
-        ORDER BY date DESC LIMIT 50
+        ORDER BY date DESC, id DESC LIMIT 50
     """, {"tin": tin})
     # Timeline: группировка побед по месяцу
-    timeline = fetch_all("""
-        SELECT TO_CHAR(date, 'YYYY-MM') AS bucket,
+    timeline = fetch_all(f"""
+        SELECT {month_bucket('date')} AS bucket,
                COUNT(*)                        AS n,
                COALESCE(SUM(amount_uzs), 0)    AS uzs,
                SUM(CASE WHEN risk_score >= 70 THEN 1 ELSE 0 END) AS red
@@ -389,7 +407,11 @@ def company_profile(tin: str) -> dict[str, Any]:
 # ------------------------------------------------------------------ AI narrative
 
 @app.post("/api/tenders/{tender_id}/explain")
-def tender_explain(tender_id: int, force: bool = Query(False, description="перегенерировать, игнорируя кеш")) -> dict[str, Any]:
+def tender_explain(
+    request: Request,
+    tender_id: int,
+    force: bool = Query(False, description="перегенерировать, игнорируя кеш"),
+) -> dict[str, Any]:
     t = fetch_one("SELECT * FROM tenders WHERE id = %s", (tender_id,))
     if not t:
         raise HTTPException(404, "tender not found")
@@ -397,7 +419,12 @@ def tender_explain(tender_id: int, force: bool = Query(False, description="пе�
     if not force and t.get("ai_narrative"):
         return {"narrative": t["ai_narrative"], "cached": True, "generated_at": t.get("ai_narrative_at")}
 
-    audit("ai_explain", target=str(tender_id))
+    # Rate-limit: 5 ai-вызовов / минуту с одного IP. Кеш помогает повторным запросам.
+    ip = request.client.host if request.client else "?"
+    if _rate_limited(f"explain:{ip}", limit=5, window_s=60):
+        raise HTTPException(429, "Слишком много запросов на AI-объяснение. Подожди минуту.")
+
+    audit("ai_explain", target=str(tender_id), request=request)
     try:
         narrative = explain_tender(t)
     except RuntimeError as e:
@@ -438,8 +465,8 @@ def live_xarid() -> dict[str, Any]:
 @app.get("/api/analytics/trends")
 def trends() -> dict[str, Any]:
     """Помесячная динамика: общее число + красные."""
-    return {"data": fetch_all("""
-        SELECT TO_CHAR(date, 'YYYY-MM') AS bucket,
+    return {"data": fetch_all(f"""
+        SELECT {month_bucket('date')} AS bucket,
                COUNT(*)                  AS total,
                SUM(CASE WHEN risk_score >= %(red)s THEN 1 ELSE 0 END) AS red,
                SUM(CASE WHEN risk_score >= %(yel)s AND risk_score < %(red)s THEN 1 ELSE 0 END) AS yellow,
@@ -468,7 +495,7 @@ def heatmap(top_categories: int = Query(10, ge=3, le=30)) -> dict[str, Any]:
     params = {f"c{i}": c for i, c in enumerate(cat_list)}
     cells = fetch_all(f"""
         SELECT category,
-               TO_CHAR(date, 'YYYY-MM') AS bucket,
+               {month_bucket('date')} AS bucket,
                COUNT(*) AS n,
                COALESCE(ROUND(AVG(risk_score), 0), 0) AS avg_risk,
                SUM(CASE WHEN risk_score >= 70 THEN 1 ELSE 0 END) AS red
@@ -556,16 +583,16 @@ def ministries_rating(limit: int = Query(15, ge=3, le=50)) -> dict[str, Any]:
 def tender_of_week() -> dict[str, Any]:
     """Самый подозрительный тендер за последние 7 дней (по risk_score, при равенстве — большая сумма).
     Если за неделю нет данных — берём за всё время (наша БД не растёт в реальном времени)."""
-    row = fetch_one("""
+    # Сначала пытаемся за последнюю неделю; если пусто — fallback на самый красный за всё время.
+    row = fetch_one(f"""
         SELECT id, title, customer_tin, customer_name, winner_tin, winner_name,
                amount_uzs, amount_usd, date, category, risk_score, risk_flags
         FROM tenders
-        WHERE date >= CURRENT_DATE - 7 AND risk_score IS NOT NULL
-        ORDER BY risk_score DESC, amount_uzs DESC NULLS LAST
+        WHERE date >= {date_minus_days(7)} AND risk_score IS NOT NULL
+        ORDER BY risk_score DESC, amount_uzs DESC
         LIMIT 1
-    """) if dialect_is_pg() else None
+    """)
     if not row:
-        # SQLite или нет за неделю — fallback на самый красный за всё время
         row = fetch_one("""
             SELECT id, title, customer_tin, customer_name, winner_tin, winner_name,
                    amount_uzs, amount_usd, date, category, risk_score, risk_flags
@@ -575,11 +602,6 @@ def tender_of_week() -> dict[str, Any]:
             LIMIT 1
         """)
     return {"tender": row}
-
-
-def dialect_is_pg() -> bool:
-    from backend.db.connection import dialect
-    return dialect() == "postgres"
 
 
 @app.get("/api/cases")
@@ -650,16 +672,17 @@ def by_region() -> dict[str, Any]:
     rows: list[dict] = []
 
     # 1) реальная гео-разбивка по Tuman (только аукционы земли)
-    region_rows = fetch_all("""
-        SELECT raw->>'Tuman' AS region,
+    je = json_extract_text("raw", "Tuman")
+    region_rows = fetch_all(f"""
+        SELECT {je} AS region,
                COUNT(*)                  AS n,
                COALESCE(SUM(amount_uzs), 0) AS total_uzs,
                COALESCE(SUM(amount_usd), 0) AS total_usd,
                ROUND(AVG(risk_score), 0) AS avg_risk,
                SUM(CASE WHEN risk_score >= 70 THEN 1 ELSE 0 END) AS red
         FROM tenders
-        WHERE source_dataset = '6225c27ed31e97c0521ec8a1' AND raw->>'Tuman' IS NOT NULL
-        GROUP BY raw->>'Tuman'
+        WHERE source_dataset = '6225c27ed31e97c0521ec8a1' AND {je} IS NOT NULL
+        GROUP BY {je}
         ORDER BY n DESC
     """)
     for r in region_rows:

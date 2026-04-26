@@ -13,8 +13,9 @@ import anthropic
 
 from backend.config import settings
 
-MODEL = "claude-sonnet-4-6"   # качество объяснения важнее цены
+MODEL = "claude-sonnet-4-5"   # актуальный alias на момент аудита
 MAX_TOKENS = 600
+REQUEST_TIMEOUT = 25          # короче чем Railway gateway 30s
 
 SYSTEM = """Ты — независимый антикоррупционный аналитик, который простыми словами
 объясняет гражданам Узбекистана, почему конкретный государственный тендер
@@ -62,7 +63,7 @@ def explain_tender(t: dict[str, Any]) -> str:
         raise RuntimeError("ANTHROPIC_API_KEY не задан в backend/.env")
 
     facts = _format_facts(t)
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
+    client = anthropic.Anthropic(api_key=settings.anthropic_api_key, timeout=REQUEST_TIMEOUT)
     resp = client.messages.create(
         model=MODEL,
         max_tokens=MAX_TOKENS,

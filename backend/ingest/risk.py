@@ -141,6 +141,8 @@ def recalc_all() -> dict[str, Any]:
         cur.execute("DELETE FROM analytics_cache")
         for cat, avg in avg_by_cat.items():
             prices = sorted(prices_by_cat[cat])
+            if not prices:
+                continue   # защита: категория без валидных сумм
             median = prices[len(prices) // 2]
             cur.execute(
                 "INSERT INTO analytics_cache (category, avg_price, median_price, total_count) "

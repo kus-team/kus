@@ -104,6 +104,12 @@
             if (!r.ok) throw new Error(`API ${r.status}`);
             return r.json();
         }
+
+        // XSS-safe escape для всех мест где данные с egov.uz вставляются через innerHTML
+        function esc(s) {
+            if (s == null) return '';
+            return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+        }
         function fmtUsd(n) { if (n == null) return '—'; n = Number(n); return n >= 1e6 ? '$'+(n/1e6).toFixed(2)+'M' : n >= 1e3 ? '$'+(n/1e3).toFixed(1)+'k' : '$'+n.toFixed(0); }
         function fmtUzs(n) { if (n == null) return '—'; n = Number(n); return n >= 1e9 ? (n/1e9).toFixed(2)+' млрд сум' : n >= 1e6 ? (n/1e6).toFixed(1)+' млн сум' : n >= 1e3 ? (n/1e3).toFixed(0)+' тыс сум' : n.toFixed(0)+' сум'; }
         function riskBadge(s) { if (s == null) return '<span class="badge">—</span>'; const c = s >= 70 ? 'badge-red' : s >= 30 ? 'badge-amber' : 'badge-green'; return `<span class="badge ${c}">${s}</span>`; }

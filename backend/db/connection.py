@@ -144,6 +144,30 @@ def dialect() -> str:
     return "postgres" if (DATABASE_URL and _is_postgres(DATABASE_URL)) else "sqlite"
 
 
+# ===== Cross-dialect SQL helpers =====
+# Используются в main.py чтобы один и тот же endpoint работал на Postgres и SQLite.
+
+def month_bucket(col: str) -> str:
+    """Helper: 'YYYY-MM' bucket для группировки по месяцу. TO_CHAR/strftime."""
+    if dialect() == "postgres":
+        return f"TO_CHAR({col}, 'YYYY-MM')"
+    return f"strftime('%Y-%m', {col})"
+
+
+def json_extract_text(col: str, key: str) -> str:
+    """Helper: вытащить TEXT по ключу из JSONB/TEXT-as-JSON колонки."""
+    if dialect() == "postgres":
+        return f"{col}->>'{key}'"
+    return f"json_extract({col}, '$.{key}')"
+
+
+def date_minus_days(days: int) -> str:
+    """Helper: 'дата минус N дней' для WHERE."""
+    if dialect() == "postgres":
+        return f"CURRENT_DATE - {int(days)}"
+    return f"date('now', '-{int(days)} days')"
+
+
 if __name__ == "__main__":
     print(f"dialect: {dialect()}")
     print(f"schema:  {schema_file()}")
