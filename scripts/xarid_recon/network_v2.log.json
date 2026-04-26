@@ -1,0 +1,170 @@
+[
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Info/GetPopup",
+    "status": 204,
+    "postData": null,
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Info/GetCurrentIp",
+    "status": 200,
+    "postData": null,
+    "body": "\"86.62.0.158\""
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Lib/GetRegions",
+    "status": 200,
+    "postData": null,
+    "body": "[{\"id\":2,\"name\":\"Андижанская область\"},{\"id\":242,\"name\":\"Бухарская область\"},{\"id\":487,\"name\":\"Джизакская область\"},{\"id\":679,\"name\":\"Кашкадарьинская область\"},{\"id\":1008,\"name\":\"Навоийская область\"},{\"id\":1150,\"name\":\"Наманганская область\"},{\"id\":3049,\"name\":\"Республика Каракалпакстан\"},{\"id\":1413,\"name\":\"Самаркандская область\"},{\"id\":1692,\"name\":\"Сурхандарьинская область\"},{\"id\":1977,\"name\":\"Сыр"
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Info/GetCurrentIp",
+    "status": 200,
+    "postData": null,
+    "body": "\"86.62.0.158\""
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Lib/GetCategories",
+    "status": 200,
+    "postData": null,
+    "body": "[{\"id\":106825,\"name\":\"Продукция и услуги сельского хозяйства и охоты\"},{\"id\":107919,\"name\":\"Продукция лесоводства, лесозаготовок и связанные с этим услуги\"},{\"id\":108163,\"name\":\"Рыба и прочая продукция рыболовства и рыбоводства; услуги, связанные с рыболовством и рыбоводством\"},{\"id\":108595,\"name\":\"Уголь\"},{\"id\":108631,\"name\":\"Нефть сырая и газ природный\"},{\"id\":108768,\"name\":\"Руды металлические\"}"
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-shop.uzex.uz/Common/GetDealStatuses",
+    "status": 200,
+    "postData": null,
+    "body": "[{\"id\":1,\"name\":\"Новая\"},{\"id\":2,\"name\":\"Оплачена\"},{\"id\":3,\"name\":\"Поставлена\"},{\"id\":4,\"name\":\"Рассторжена\"},{\"id\":5,\"name\":\"Поставлена (Восстановлена)\"},{\"id\":11,\"name\":\"Срок оплаты истек\"},{\"id\":13,\"name\":\"Срок доставки истек\"},{\"id\":14,\"name\":\"Аннулирована - не оплачен\"}]"
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Common/GetNews",
+    "status": 200,
+    "postData": null,
+    "body": "[{\"id\":445,\"created_date\":\"2026-02-23T16:00:17\",\"content\":\"Sunʼiy intellekt (AI Chat-bot)\\r\\n\",\"file_path\":\"files/user-files/2026/2/23\",\"lang_id\":4,\"name\":\"a59d921f-83ed-4459-8fc0-301181a210ff.pdf\",\"ext\":\"pdf\"},{\"id\":443,\"created_date\":\"2026-02-23T15:55:59\",\"content\":\"Elektron to‘g‘ridan-to‘g‘ri xaridlarda shartnomalarni DIDOX tizimi orqali  imzolash imkoniyati \",\"file_path\":\"files/user-files/2026"
+  },
+  {
+    "method": "POST",
+    "url": "https://xarid-api-shop.uzex.uz/Common/GetCompletedDeals",
+    "status": 200,
+    "postData": "{\"region_ids\":[],\"display_on_shop\":0,\"display_on_national\":1,\"year_id\":2026,\"from\":1,\"to\":12}",
+    "body": "[{\"lot_id\":5114591,\"lot_display_no\":\"261211145114591\",\"category_name\":\"Услуги в области архитектуры и инженерно-технического проектирования, технических испытаний, исследований и анализа\",\"product_name\":\"Услуга по разработке проектно-сметных работ\",\"pcp_count\":2,\"js_properties\":null,\"condition\":\"Юк кутарувчи механизмлар (осма кран)ни лойха смета хужжатларини таерлаш \",\"amount\":1.0,\"deal_cost\":1400"
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Info/GetPopup",
+    "status": 204,
+    "postData": null,
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Info/GetCurrentIp",
+    "status": 200,
+    "postData": null,
+    "body": "\"86.62.0.158\""
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Common/GetNews",
+    "status": 200,
+    "postData": null,
+    "body": "[{\"id\":445,\"created_date\":\"2026-02-23T16:00:17\",\"content\":\"Sunʼiy intellekt (AI Chat-bot)\\r\\n\",\"file_path\":\"files/user-files/2026/2/23\",\"lang_id\":4,\"name\":\"a59d921f-83ed-4459-8fc0-301181a210ff.pdf\",\"ext\":\"pdf\"},{\"id\":443,\"created_date\":\"2026-02-23T15:55:59\",\"content\":\"Elektron to‘g‘ridan-to‘g‘ri xaridlarda shartnomalarni DIDOX tizimi orqali  imzolash imkoniyati \",\"file_path\":\"files/user-files/2026"
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Info/GetCurrentIp",
+    "status": 200,
+    "postData": null,
+    "body": "\"86.62.0.158\""
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Lib/GetRegions",
+    "status": 200,
+    "postData": null,
+    "body": "[{\"id\":2,\"name\":\"Андижанская область\"},{\"id\":242,\"name\":\"Бухарская область\"},{\"id\":487,\"name\":\"Джизакская область\"},{\"id\":679,\"name\":\"Кашкадарьинская область\"},{\"id\":1008,\"name\":\"Навоийская область\"},{\"id\":1150,\"name\":\"Наманганская область\"},{\"id\":3049,\"name\":\"Республика Каракалпакстан\"},{\"id\":1413,\"name\":\"Самаркандская область\"},{\"id\":1692,\"name\":\"Сурхандарьинская область\"},{\"id\":1977,\"name\":\"Сыр"
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Lib/GetCategories",
+    "status": 200,
+    "postData": null,
+    "body": "[{\"id\":106825,\"name\":\"Продукция и услуги сельского хозяйства и охоты\"},{\"id\":107919,\"name\":\"Продукция лесоводства, лесозаготовок и связанные с этим услуги\"},{\"id\":108163,\"name\":\"Рыба и прочая продукция рыболовства и рыбоводства; услуги, связанные с рыболовством и рыбоводством\"},{\"id\":108595,\"name\":\"Уголь\"},{\"id\":108631,\"name\":\"Нефть сырая и газ природный\"},{\"id\":108768,\"name\":\"Руды металлические\"}"
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-shop.uzex.uz/Common/GetDealStatuses",
+    "status": 200,
+    "postData": null,
+    "body": "[{\"id\":1,\"name\":\"Новая\"},{\"id\":2,\"name\":\"Оплачена\"},{\"id\":3,\"name\":\"Поставлена\"},{\"id\":4,\"name\":\"Рассторжена\"},{\"id\":5,\"name\":\"Поставлена (Восстановлена)\"},{\"id\":11,\"name\":\"Срок оплаты истек\"},{\"id\":13,\"name\":\"Срок доставки истек\"},{\"id\":14,\"name\":\"Аннулирована - не оплачен\"}]"
+  },
+  {
+    "method": "POST",
+    "url": "https://xarid-api-shop.uzex.uz/Common/GetCompletedDeals",
+    "status": 200,
+    "postData": "{\"region_ids\":[],\"display_on_shop\":0,\"display_on_national\":0,\"year_id\":2026,\"from\":1,\"to\":12}",
+    "body": "[]"
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Info/GetPopup",
+    "status": 204,
+    "postData": null,
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Info/GetCurrentIp",
+    "status": 200,
+    "postData": null,
+    "body": "\"86.62.0.158\""
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Info/GetPopup",
+    "status": 204,
+    "postData": null,
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Info/GetCurrentIp",
+    "status": 200,
+    "postData": null,
+    "body": "\"86.62.0.158\""
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Info/GetCurrentIp",
+    "status": 200,
+    "postData": null,
+    "body": "\"86.62.0.158\""
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Info/GetPopup",
+    "status": 204,
+    "postData": null,
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Info/GetPopup",
+    "status": 204,
+    "postData": null,
+    "body": ""
+  },
+  {
+    "method": "GET",
+    "url": "https://xarid-api-trade.uzex.uz/Info/GetCurrentIp",
+    "status": 200,
+    "postData": null,
+    "body": "\"86.62.0.158\""
+  }
+]

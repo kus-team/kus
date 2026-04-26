@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% set active_page = "check" %}
+{% block title %}Жалоба на тендер{% endblock %}
+
+{% block content %}
+<div class="page" id="page" data-tid="{{ tender_id }}">
+    <a href="/tenders/{{ tender_id }}" class="back-link"><i class="fas fa-arrow-left"></i> Вернуться к тендеру</a>
+
+    <div id="hero" class="hero-card hero-skel">
+        <div class="skel-text">Загрузка тендера #{{ tender_id }}…</div>
+    </div>
+
+    <div class="panel" id="formPanel">
+        <div class="panel-h">
+            <h2><i class="fas fa-flag"></i> Жалоба на подозрительный тендер</h2>
+        </div>
+
+        <form id="complaintForm" autocomplete="off" onsubmit="return false">
+            <div class="field">
+                <label for="violationType">Тип нарушения</label>
+                <select id="violationType" required>
+                    <option value="Завышенная цена">Завышенная цена</option>
+                    <option value="Своя компания / монополизация">Своя компания / монополизация</option>
+                    <option value="Закупка без конкурса">Закупка без конкурса</option>
+                    <option value="Подделка документов">Подделка документов</option>
+                    <option value="Конфликт интересов">Конфликт интересов</option>
+                    <option value="Иное">Иное</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="description">Кратко опишите подозрение</label>
+                <textarea id="description" rows="6" placeholder="Опишите, что вызвало подозрения…"></textarea>
+            </div>
+
+            <div class="field-row">
+                <div class="field">
+                    <label for="senderName">Ваше имя (по желанию)</label>
+                    <input type="text" id="senderName" placeholder="Например, Алишер У.">
+                </div>
+                <div class="field">
+                    <label for="senderContact">Email или телефон для обратной связи (по желанию)</label>
+                    <input type="text" id="senderContact" placeholder="example@mail.uz / +998…">
+                </div>
+            </div>
+
+            <div class="field-check">
+                <label class="check-lbl">
+                    <input type="checkbox" id="confirmHonest" required>
+                    <span>Я подтверждаю, что сведения честные и я не намеренно обвиняю.</span>
+                </label>
+            </div>
+
+            <div class="actions-row">
+                <button type="button" class="btn-big btn-primary-big" onclick="sendMail()">
+                    <i class="fas fa-envelope"></i> Отправить в Антикоррупционное агентство
+                </button>
+                <button type="button" class="btn-big btn-secondary-big" onclick="copyText()">
+                    <i class="fas fa-copy"></i> Скопировать готовый текст
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="note-panel">
+        <i class="fas fa-circle-info"></i>
+        <div>
+            Жалоба отправляется через ваш почтовый клиент.
+            <b>KUS не хранит её и не отправляет автоматически.</b>
+            Вы можете отредактировать письмо перед отправкой.
+        </div>
+    </div>
+</div>
+
+<style>
+.page { max-width: 900px; margin: 0 auto; padding: 24px 24px 48px; }
+.back-link { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-decoration: none; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px; transition: color .2s; }
+.back-link:hover { color: var(--accent-cyan); }
+.skel-text { color: var(--text-dim); font-size: 13px; padding: 24px; text-align: center; }
+
+/* HERO */
+.hero-card {
+    position: relative; padding: 24px 28px; margin-bottom: 18px; overflow: hidden;
+    background: rgba(18,25,41,0.82); backdrop-filter: blur(12px);
+    border: 1px solid var(--border-light); border-radius: var(--radius-lg);
+}
+.hero-card.hero-skel { min-height: 100px; display: flex; align-items: center; justify-content: center; }
+.hero-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent-red), var(--accent-cyan), transparent); }
+
+.hero-row { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
+.hero-info { flex: 1; min-width: 220px; }
+.hero-info h2 { font-family: var(--font-mono); font-size: 18px; line-height: 1.3; color: var(--text-primary); margin-bottom: 8px; }
+.hero-info .h-lot { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; }
+
+.score-badge {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 14px 22px; border-radius: var(--radius-lg);
+    min-width: 110px;
+}
+.score-badge .sb-num { font-family: var(--font-mono); font-size: 38px; font-weight: 700; line-height: 1; }
+.score-badge .sb-lab { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; }
+.score-badge.red    { background: rgba(231,76,60,0.15);  box-shadow: 0 0 30px rgba(231,76,60,0.18) inset; }
+.score-badge.amber  { background: rgba(230,126,34,0.15); box-shadow: 0 0 30px rgba(230,126,34,0.15) inset; }
+.score-badge.green  { background: rgba(39,174,96,0.15);  box-shadow: 0 0 30px rgba(39,174,96,0.15) inset; }
+.score-badge.red    .sb-num { color: #ff6f61; }
+.score-badge.amber  .sb-num { color: var(--accent-amber); }
+.score-badge.green  .sb-num { color: var(--success); }
+
+.flag-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.flag-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 14px;
+    background: rgba(231,76,60,0.15); color: #ff6f61;
+    font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;
+}
+
+/* PANEL (form) */
+.panel {
+    background: rgba(18,25,41,0.82); backdrop-filter: blur(12px);
+    border: 1px solid var(--border-light); border-radius: var(--radius-lg);
+    padding: 22px 24px; margin-bottom: 18px;
+}
+.panel-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+.panel-h h2 { font-family: var(--font-mono); font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
+.panel-h h2 i { color: var(--accent-red-dim); }
+
+/* FORM FIELDS */
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.field label {
+    font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-dim);
+}
+.field input[type="text"], .field select, .field textarea {
+    background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius);
+    color: var(--text-primary); padding: 11px 14px; font-size: 14px;
+    font-family: var(--font-sans, 'Manrope', sans-serif);
+    outline: none; transition: border-color .2s, box-shadow .2s;
+    width: 100%; box-sizing: border-box;
+}
+.field textarea { resize: vertical; min-height: 110px; line-height: 1.5; font-family: var(--font-mono); font-size: 13px; }
+.field select { font-family: var(--font-mono); font-size: 13px; cursor: pointer; }
+.field input[type="text"]:focus, .field select:focus, .field textarea:focus {
+    border-color: var(--accent-red);
+    box-shadow: 0 0 0 3px var(--accent-red-glow);
+}
+
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 720px) { .field-row { grid-template-columns: 1fr; } }
+
+.field-check { margin: 8px 0 18px; }
+.check-lbl {
+    display: flex; align-items: flex-start; gap: 10px; cursor: pointer;
+    color: var(--text-secondary); font-size: 13px; line-height: 1.5;
+}
+.check-lbl input[type="checkbox"] {
+    margin-top: 3px; width: 16px; height: 16px; accent-color: var(--accent-red);
+    cursor: pointer; flex-shrink: 0;
+}
+
+/* ACTIONS */
+.actions-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+@media (max-width: 720px) { .actions-row { grid-template-columns: 1fr; } }
+.btn-big {
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 14px 20px; border-radius: var(--radius); border: none; cursor: pointer;
+    font-family: var(--font-mono); font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px;
+    transition: all .2s; text-decoration: none;
+}
+.btn-primary-big {
+    background: linear-gradient(135deg, #e74c3c, var(--accent-red-dim));
+    color: white; box-shadow: 0 4px 16px rgba(231,76,60,0.35);
+}
+.btn-primary-big:hover { transform: translateY(-1px); box-shadow: 0 6px 22px rgba(231,76,60,0.5); }
+.btn-secondary-big {
+    background: var(--bg-elevated); color: var(--text-primary);
+    border: 1px solid var(--border);
+}
+.btn-secondary-big:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+
+/* NOTE */
+.note-panel {
+    display: flex; gap: 12px; align-items: flex-start;
+    background: rgba(0,172,193,0.06); border: 1px solid rgba(0,172,193,0.2);
+    border-radius: var(--radius); padding: 14px 18px;
+    color: var(--text-secondary); font-size: 12px; line-height: 1.6;
+}
+.note-panel i { color: var(--accent-cyan); font-size: 16px; margin-top: 2px; flex-shrink: 0; }
+.note-panel b { color: var(--text-primary); }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const TID = parseInt(document.getElementById('page').dataset.tid, 10);
+let TENDER = null;
+
+function clsForRisk(r) { return r >= 70 ? 'red' : r >= 30 ? 'amber' : 'green'; }
+function labForRisk(r) { return r >= 70 ? 'ВЫСОКИЙ РИСК' : r >= 30 ? 'СРЕДНИЙ' : 'НИЗКИЙ'; }
+
+function firedFlagChips(flags) {
+    const chips = [];
+    if (flags.monopoly)   chips.push('<span class="flag-chip"><i class="fas fa-user-tie"></i> Монополия</span>');
+    if (flags.no_compete) chips.push('<span class="flag-chip"><i class="fas fa-handshake-slash"></i> Без конкурса</span>');
+    if (flags.overpriced) chips.push('<span class="flag-chip"><i class="fas fa-arrow-trend-up"></i> Переплата</span>');
+    return chips.slice(0, 3).join('');
+}
+
+function pickViolationType(flags) {
+    if (flags.overpriced) return 'Завышенная цена';
+    if (flags.monopoly)   return 'Своя компания / монополизация';
+    if (flags.no_compete) return 'Закупка без конкурса';
+    return 'Иное';
+}
+
+function draftDescription(t) {
+    const flags = t.risk_flags || {};
+    const parts = [`Тендер #${t.id} выглядит подозрительно.`];
+    if (flags.monopoly && flags.pair_wins)
+        parts.push(`Победитель (ИНН ${t.winner_tin || '?'}) выигрывал у этого заказчика уже ${flags.pair_wins} раз — паттерн «своей компании».`);
+    if (flags.overpriced) {
+        const avg = flags.category_avg ? Math.round(+flags.category_avg).toLocaleString('ru-RU') + ' сум' : '?';
+        parts.push(`Сумма контракта на 30%+ выше средней по категории «${t.category || '—'}» (avg ≈ ${avg}).`);
+    }
+    if (flags.no_compete)
+        parts.push('Контракт оформлен как прямая закупка без конкурса.');
+    if (parts.length === 1)
+        parts.push('Прошу проверить обстоятельства проведения этой закупки.');
+    return parts.join(' ');
+}
+
+function buildBody(t) {
+    const flags = t.risk_flags || {};
+    const violation = document.getElementById('violationType').value;
+    const description = document.getElementById('description').value;
+    const senderName = document.getElementById('senderName').value.trim();
+    const senderContact = document.getElementById('senderContact').value.trim();
+    const origin = window.location.origin;
+
+    const lines = [
+        'Здравствуйте.',
+        '',
+        'Сообщаю о подозрительном тендере, выявленном через платформу KUS (Kill Unlawful Schemes).',
+        '',
+        '— ДЕТАЛИ ТЕНДЕРА —',
+        `ID в KUS:        #${t.id}`,
+        `№ лота:          ${t.lot_id || '—'}`,
+        `Название:        ${t.title || '—'}`,
+        `Категория:       ${t.category || '—'}`,
+        `Дата контракта:  ${t.date || '—'}`,
+        `Заказчик:        ${t.customer_name || '—'} (ИНН ${t.customer_tin || '—'})`,
+        `Победитель:      ${t.winner_name || '—'} (ИНН ${t.winner_tin || '—'})`,
+        `Сумма:           ${fmtUzs(t.amount_uzs)} (${fmtUsd(t.amount_usd)})`,
+        `Risk score KUS:  ${t.risk_score ?? 0} / 100  [${labForRisk(t.risk_score ?? 0)}]`,
+        '',
+        '— СРАБОТАВШИЕ КРАСНЫЕ ФЛАГИ —',
+        flags.monopoly   ? `• Монополизация: победитель выигрывал у заказчика ${flags.pair_wins ?? '?'} раз.` : null,
+        flags.overpriced ? `• Переплата: цена выше средней по категории (avg ≈ ${flags.category_avg ? Math.round(+flags.category_avg).toLocaleString('ru-RU') + ' сум' : '?'}).` : null,
+        flags.no_compete ? '• Прямая закупка: контракт заключён без конкурса.' : null,
+        (!flags.monopoly && !flags.overpriced && !flags.no_compete) ? '• (по алгоритму KUS критичных флагов не сработало, но обстоятельства всё равно вызывают вопросы)' : null,
+        '',
+        '— ТИП НАРУШЕНИЯ —',
+        violation,
+        '',
+        '— ОПИСАНИЕ —',
+        description || '(не указано)',
+        '',
+        '— КОНТАКТЫ ОТПРАВИТЕЛЯ —',
+        `Имя:   ${senderName || '(анонимно)'}`,
+        `Связь: ${senderContact || '(не указано)'}`,
+        '',
+        '---',
+        `Источник: KUS · ${origin}/tenders/${t.id}`,
+    ];
+    return lines.filter(x => x !== null).join('\n');
+}
+
+function buildSubject(t) {
+    return `Жалоба: подозрительный тендер #${t.id}`;
+}
+
+function validateForm() {
+    if (!document.getElementById('confirmHonest').checked) {
+        showToast('Подтвердите честность сведений (галочка внизу формы)');
+        return false;
+    }
+    if (!document.getElementById('description').value.trim()) {
+        showToast('Опишите подозрение хотя бы в двух словах');
+        return false;
+    }
+    return true;
+}
+
+function sendMail() {
+    if (!TENDER || !validateForm()) return;
+    const subject = buildSubject(TENDER);
+    const body = buildBody(TENDER);
+    const url = `mailto:info@anticor.uz?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = url;
+    showToast('Открываю почтовый клиент…');
+}
+
+async function copyText() {
+    if (!TENDER || !validateForm()) return;
+    const text = `Кому: info@anticor.uz\nТема: ${buildSubject(TENDER)}\n\n${buildBody(TENDER)}`;
+    try {
+        await navigator.clipboard.writeText(text);
+        showToast('Текст жалобы скопирован в буфер обмена');
+    } catch (e) {
+        showToast('Не удалось скопировать: ' + e.message);
+    }
+}
+
+(async () => {
+    let t;
+    try {
+        t = await api('/api/tenders/' + TID);
+    } catch (e) {
+        document.getElementById('hero').innerHTML =
+            `<div class="skel-text" style="color:#ff6f61">Не удалось загрузить тендер #${TID}: ${e.message}</div>`;
+        return;
+    }
+    TENDER = t;
+    const flags = t.risk_flags || {};
+    const score = t.risk_score ?? 0;
+    const cls = clsForRisk(score);
+
+    const hero = document.getElementById('hero');
+    hero.classList.remove('hero-skel');
+    hero.innerHTML = `
+        <div class="hero-row">
+            <div class="hero-info">
+                <h2>${(t.title || '—').slice(0, 140)}${(t.title || '').length > 140 ? '…' : ''}</h2>
+                <div class="h-lot"><i class="fas fa-hashtag"></i> Лот ${t.lot_id || '—'} · ID #${t.id}</div>
+                <div class="flag-chips">${firedFlagChips(flags) || '<span style="color:var(--text-dim);font-family:var(--font-mono);font-size:11px">флагов не сработало</span>'}</div>
+            </div>
+            <div class="score-badge ${cls}">
+                <div class="sb-num">${score}</div>
+                <div class="sb-lab">${labForRisk(score)}</div>
+            </div>
+        </div>
+    `;
+
+    document.getElementById('violationType').value = pickViolationType(flags);
+    document.getElementById('description').value = draftDescription(t);
+})();
+</script>
+{% endblock %}

@@ -1,9 +1,21 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}KUS{% endblock %} | Kill Unlawful Schemes</title>
+
+    <!-- Open Graph + Twitter превью для красивого шаринга -->
+    <meta property="og:title" content="KUS · Kill Unlawful Schemes">
+    <meta property="og:description" content="Алгоритмическая аналитика рисков коррупции в госзакупках Узбекистана. 5 078 тендеров · $4 млрд · 11 красных флагов.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/static/img/og-cover.svg">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     <link rel="stylesheet" href="/static/css/kus.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -14,76 +26,169 @@
     <!-- Декоративная карта Узбекистана как фон. Скрывается на странице /map. -->
     <div id="bgmap" aria-hidden="true"></div>
     <div id="bgmap-vignette" aria-hidden="true"></div>
+
     <nav class="nav-bar">
         <a href="/" class="nav-logo">
             <div class="eye-icon"></div>
             <span>KUS</span>
         </a>
-        <div class="nav-links">
-            <a href="/" class="{{ 'active' if active_page == 'dashboard' else '' }}">
+        <button class="nav-burger" id="navBurger" aria-label="Меню">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="nav-links" id="navLinks">
+            <a href="/" class="{{ 'active' if active_page == 'dashboard' else '' }}"
+               data-tooltip="Главная панель: KPI, риски, топ-компании">
                 <i class="fas fa-th-large"></i> Дашборд
             </a>
-            <a href="/tenders" class="{{ 'active' if active_page == 'tenders' else '' }}">
+            <a href="/tenders" class="{{ 'active' if active_page == 'tenders' else '' }}"
+               data-tooltip="Все тендеры с фильтрами по рискам">
                 <i class="fas fa-table"></i> Тендеры
             </a>
-            <a href="/companies" class="{{ 'active' if active_page == 'companies' else '' }}">
+            <a href="/companies" class="{{ 'active' if active_page == 'companies' else '' }}"
+               data-tooltip="Топ компаний-победителей">
                 <i class="fas fa-building"></i> Компании
             </a>
-            <a href="/graph" class="{{ 'active' if active_page == 'graph' else '' }}">
-                <i class="fas fa-share-nodes"></i> Граф связей
+            <a href="/graph" class="{{ 'active' if active_page == 'graph' else '' }}"
+               data-tooltip="Граф связей «заказчик ↔ победитель»">
+                <i class="fas fa-share-nodes"></i> Граф
             </a>
-            <a href="/map" class="{{ 'active' if active_page == 'map' else '' }}">
+            <a href="/map" class="{{ 'active' if active_page == 'map' else '' }}"
+               data-tooltip="Карта рисков по регионам Узбекистана">
                 <i class="fas fa-map-location-dot"></i> Карта
             </a>
-            <a href="/check" class="{{ 'active' if active_page == 'check' else '' }}">
-                <i class="fas fa-shield-halved"></i> Проверить тендер
+            <a href="/compare" class="{{ 'active' if active_page == 'compare' else '' }}"
+               data-tooltip="Сравнить два тендера side-by-side">
+                <i class="fas fa-code-compare"></i> Сравнить
             </a>
+            <a href="/check" class="{{ 'active' if active_page == 'check' else '' }}"
+               data-tooltip="Проверить любой тендер по ID/названию">
+                <i class="fas fa-shield-halved"></i> Проверить
+            </a>
+            <a href="#" id="bookmarksLink" data-tooltip="Закладки сохранены в этом браузере">
+                <i class="fas fa-bookmark"></i> <span id="bmCount">0</span>
+            </a>
+            <button class="theme-toggle" id="themeToggle" data-tooltip="Сменить тему (Ctrl+Shift+L)" aria-label="Тема">
+                <i class="fas fa-moon" id="themeIcon"></i>
+            </button>
         </div>
     </nav>
 
-    {% block content %}{% endblock %}
+    <main class="page-fade-in">
+        {% block content %}{% endblock %}
+    </main>
 
     <div class="toast-container" id="toastContainer"></div>
 
+    <!-- Bookmarks panel (slide-in справа) -->
+    <div class="bm-panel" id="bmPanel">
+        <div class="bm-panel-h">
+            <h3><i class="fas fa-bookmark"></i> Закладки</h3>
+            <button onclick="closeBookmarks()" class="bm-close" aria-label="Закрыть"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="bm-list" id="bmList"></div>
+    </div>
+    <div class="bm-overlay" id="bmOverlay" onclick="closeBookmarks()"></div>
+
     <script>
+        // ===== UTILS =====
         function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.textContent = message;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 5000);
+            const c = document.getElementById('toastContainer');
+            const t = document.createElement('div');
+            t.className = `toast ${type}`;
+            t.textContent = message;
+            c.appendChild(t);
+            setTimeout(() => { t.classList.add('out'); setTimeout(() => t.remove(), 400); }, 4000);
         }
-
         async function api(url) {
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(`API ${res.status}`);
-            return res.json();
+            const r = await fetch(url);
+            if (!r.ok) throw new Error(`API ${r.status}`);
+            return r.json();
+        }
+        function fmtUsd(n) { if (n == null) return '—'; n = Number(n); return n >= 1e6 ? '$'+(n/1e6).toFixed(2)+'M' : n >= 1e3 ? '$'+(n/1e3).toFixed(1)+'k' : '$'+n.toFixed(0); }
+        function fmtUzs(n) { if (n == null) return '—'; n = Number(n); return n >= 1e9 ? (n/1e9).toFixed(2)+' млрд сум' : n >= 1e6 ? (n/1e6).toFixed(1)+' млн сум' : n >= 1e3 ? (n/1e3).toFixed(0)+' тыс сум' : n.toFixed(0)+' сум'; }
+        function riskBadge(s) { if (s == null) return '<span class="badge">—</span>'; const c = s >= 70 ? 'badge-red' : s >= 30 ? 'badge-amber' : 'badge-green'; return `<span class="badge ${c}">${s}</span>`; }
+
+        // ===== THEME =====
+        const THEME_KEY = 'kus.theme';
+        function applyTheme(t) {
+            document.documentElement.setAttribute('data-theme', t);
+            localStorage.setItem(THEME_KEY, t);
+            const i = document.getElementById('themeIcon');
+            if (i) i.className = t === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
+        }
+        applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+        });
+        document.addEventListener('keydown', e => {
+            if ((e.ctrlKey||e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'l') {
+                e.preventDefault();
+                applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+            }
+        });
+
+        // ===== BURGER (mobile) =====
+        document.getElementById('navBurger').addEventListener('click', () => {
+            document.getElementById('navLinks').classList.toggle('open');
+        });
+
+        // ===== BOOKMARKS =====
+        const BM_KEY = 'kus.bookmarks';
+        function getBookmarks() { try { return JSON.parse(localStorage.getItem(BM_KEY) || '[]'); } catch { return []; } }
+        function setBookmarks(arr) { localStorage.setItem(BM_KEY, JSON.stringify(arr)); updateBmCount(); }
+        function updateBmCount() { const c = document.getElementById('bmCount'); if (c) c.textContent = getBookmarks().length; }
+        function isBookmarked(id) { return getBookmarks().some(b => b.id === id); }
+        function toggleBookmark(id, title, score) {
+            const list = getBookmarks();
+            const i = list.findIndex(b => b.id === id);
+            if (i >= 0) { list.splice(i, 1); showToast('Удалено из закладок'); }
+            else { list.unshift({ id, title, score, ts: Date.now() }); showToast('Сохранено в закладки 🔖', 'info'); }
+            setBookmarks(list);
+            return isBookmarked(id);
+        }
+        function bookmarkButton(id, title, score) {
+            const on = isBookmarked(id);
+            return `<button class="bm-btn ${on?'on':''}" onclick="event.stopPropagation(); const r=toggleBookmark(${id}, ${JSON.stringify((title||'').replace(/"/g,'\\"'))}, ${score||0}); this.classList.toggle('on', r); this.innerHTML = r ? '<i class=\\'fas fa-bookmark\\'></i>' : '<i class=\\'far fa-bookmark\\'></i>';" title="${on?'В закладках':'В закладки'}">${on ? '<i class="fas fa-bookmark"></i>' : '<i class="far fa-bookmark"></i>'}</button>`;
+        }
+        function openBookmarks(e) {
+            if (e) e.preventDefault();
+            const list = getBookmarks();
+            const html = list.length === 0
+                ? '<div class="bm-empty"><i class="far fa-bookmark"></i><p>Закладок пока нет.<br>Нажми 🔖 на любой карточке тендера.</p></div>'
+                : list.map(b => `
+                    <div class="bm-item" onclick="window.location.href='/tenders/${b.id}'">
+                        <div class="bm-row"><span class="badge ${b.score>=70?'badge-red':b.score>=30?'badge-amber':'badge-green'}">${b.score}</span> <span class="bm-title">${b.title || '#' + b.id}</span></div>
+                        <button class="bm-rm" onclick="event.stopPropagation(); toggleBookmark(${b.id}); openBookmarks();" title="Убрать"><i class="fas fa-times"></i></button>
+                    </div>`).join('');
+            document.getElementById('bmList').innerHTML = html;
+            document.getElementById('bmPanel').classList.add('open');
+            document.getElementById('bmOverlay').classList.add('open');
+        }
+        function closeBookmarks() {
+            document.getElementById('bmPanel').classList.remove('open');
+            document.getElementById('bmOverlay').classList.remove('open');
+        }
+        document.getElementById('bookmarksLink').addEventListener('click', openBookmarks);
+        updateBmCount();
+
+        // ===== SHARE =====
+        function shareTender(id, title) {
+            const url = location.origin + '/tenders/' + id;
+            const text = `Подозрительный тендер #${id}: ${title || ''} · KUS`;
+            const html = `
+                <div class="share-pop">
+                    <a href="https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}" target="_blank" class="sh-btn tg"><i class="fab fa-telegram"></i> Telegram</a>
+                    <a href="https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + url)}" target="_blank" class="sh-btn wa"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+                    <a href="mailto:?subject=${encodeURIComponent(text)}&body=${encodeURIComponent(url)}" class="sh-btn em"><i class="fas fa-envelope"></i> Email</a>
+                    <button onclick="navigator.clipboard.writeText('${url}'); showToast('Ссылка скопирована'); document.querySelector('.share-pop').remove();" class="sh-btn cp"><i class="fas fa-link"></i> Копировать</button>
+                </div>`;
+            const div = document.createElement('div');
+            div.innerHTML = html;
+            document.body.appendChild(div.firstElementChild);
+            setTimeout(() => document.querySelector('.share-pop')?.remove(), 8000);
         }
 
-        function fmtUsd(n) {
-            if (n == null) return '—';
-            n = Number(n);
-            if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
-            if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'k';
-            return '$' + n.toFixed(0);
-        }
-        function fmtUzs(n) {
-            if (n == null) return '—';
-            n = Number(n);
-            if (n >= 1e9) return (n / 1e9).toFixed(2) + ' млрд сум';
-            if (n >= 1e6) return (n / 1e6).toFixed(1) + ' млн сум';
-            if (n >= 1e3) return (n / 1e3).toFixed(0) + ' тыс сум';
-            return n.toFixed(0) + ' сум';
-        }
-        function riskBadge(score) {
-            if (score == null) return '<span class="badge">—</span>';
-            const cls = score >= 70 ? 'badge-red' : score >= 30 ? 'badge-amber' : 'badge-green';
-            return `<span class="badge ${cls}">${score}</span>`;
-        }
-
-        // Декоративная карта Узбекистана как фон (CartoDB Dark, де-сатурированная через CSS).
-        // Не запускается на странице /map (там карта основная).
+        // ===== BG MAP (декоративный фон) =====
         (function initBgMap() {
             if (document.body.classList.contains('page-map')) return;
             const el = document.getElementById('bgmap');
@@ -97,6 +202,10 @@
                 subdomains: 'abcd', maxZoom: 8, minZoom: 4,
             }).addTo(m);
             window.addEventListener('resize', () => m.invalidateSize());
+            // Параллакс — карта медленно движется при скролле страницы
+            window.addEventListener('scroll', () => {
+                el.style.transform = `translateY(${window.scrollY * 0.15}px)`;
+            }, { passive: true });
         })();
     </script>
     {% block scripts %}{% endblock %}

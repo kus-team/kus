@@ -1,13 +1,3 @@
-"""
-Подключение к БД с двумя режимами:
-  - postgresql://...   → psycopg 3 (production / Neon)
-  - пусто или sqlite:  → встроенный sqlite3 (local dev, чтобы не блокироваться)
-
-API наружу одинаковый: connect() возвращает контекстный менеджер;
-курсор отдаёт строки в виде dict (row['col'] и row.get('col')).
-Плейсхолдеры в SQL: %(name)s — для совместимости в обоих режимах
-(в sqlite автоматически переводятся в :name перед exec).
-"""
 from __future__ import annotations
 
 import re
@@ -26,9 +16,7 @@ def _is_postgres(url: str) -> bool:
     return url.startswith("postgres://") or url.startswith("postgresql://")
 
 
-# ============================================================
-# SQLite adapter (имитирует мини-API psycopg, чтобы не дублировать код)
-# ============================================================
+
 
 _PARAM_RE = re.compile(r"%\((\w+)\)s")
 
@@ -116,19 +104,12 @@ class _SqliteConn:
         self.close()
 
 
-# ============================================================
-# Postgres connection (psycopg)
-# ============================================================
-
 def _connect_postgres(url: str):
     import psycopg
     from psycopg.rows import dict_row
     return psycopg.connect(url, row_factory=dict_row, autocommit=False)
 
 
-# ============================================================
-# Public API
-# ============================================================
 
 def connect():
     if DATABASE_URL and _is_postgres(DATABASE_URL):
@@ -149,7 +130,7 @@ def apply_schema() -> None:
     con = connect()
     try:
         cur = con.cursor()
-        # SQLite executescript для multi-statement; psycopg execute проглотит как есть
+        
         if isinstance(con, _SqliteConn):
             cur.executescript(sql)
         else:

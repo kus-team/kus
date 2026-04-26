@@ -76,6 +76,8 @@
 .score-info p { color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
 .score-info .lot-meta { display: flex; gap: 18px; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); margin-top: 14px; flex-wrap: wrap; }
 .score-info .lot-meta b { color: var(--text-primary); }
+.action-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border); }
+.action-row .btn { font-size: 11px; padding: 6px 12px; }
 
 /* ===== Flag cards ===== */
 .flags-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 16px; }
@@ -211,6 +213,12 @@ function render(t) {
                 <span><i class="fas fa-hashtag"></i> Лот <b>${t.lot_id || '—'}</b></span>
                 <span><i class="fas fa-calendar"></i> <b>${t.date || '—'}</b></span>
                 <span><i class="fas fa-tags"></i> <b>${t.category || '—'}</b></span>
+            </div>
+            <div class="action-row">
+                ${bookmarkButton(t.id, t.title, t.risk_score)}
+                <button class="btn btn-secondary btn-sm" onclick="shareTender(${t.id}, ${JSON.stringify((t.title||'').replace(/"/g,'\\"'))})"><i class="fas fa-share-nodes"></i> Поделиться</button>
+                <a class="btn btn-secondary btn-sm" href="/complaint/${t.id}"><i class="fas fa-flag"></i> Сообщить о подозрении</a>
+                <a class="btn btn-secondary btn-sm" href="/compare?a=${t.id}"><i class="fas fa-code-compare"></i> Сравнить</a>
             </div>
         </div>
       </div>

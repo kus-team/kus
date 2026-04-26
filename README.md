@@ -12,6 +12,8 @@
 
 `5 078 тендеров · 15 датасетов · $4.06 млрд · 11 красных флагов · 137 категорий`
 
+<img src="backend/app/static/img/og-cover.svg" alt="KUS preview" width="720">
+
 </div>
 
 ---
@@ -60,14 +62,33 @@ KUS превращает разрозненные открытые данные 
 ## Страницы
 
 ```
-/             Дашборд (KPI, donut рисков, bar категорий, live-feed красных, топ компаний)
-/tenders      Таблица всех тендеров с фильтрами (карточки + строки)
-/companies    Карточки победителей с поиском и сортировкой
-/companies/T  Профиль компании: hero, 5 KPI, timeline побед, граф связей, контракты
-/graph        Vis.js граф «заказчик ↔ победитель» с HUD
-/map          Leaflet-карта Узбекистана (14 районов Сурхандарьи + штабы заказчиков)
-/check        Проверить любой тендер (риск-кольцо, флаги с пояснениями, AI-нарратив)
+/                  Дашборд: KPI + анимированные счётчики, donut рисков,
+                   bar категорий, live-feed красных, trends-chart,
+                   heatmap (категория × месяц), топ компаний
+/tenders           Таблица/карточки всех тендеров, фильтры по риску,
+                   pill-фильтры, Export CSV, bookmark на каждой карточке
+/companies         Сетка карточек победителей с поиском и сортировкой
+/companies/{ИНН}   Профиль компании: hero + 5 KPI + timeline побед +
+                   мини-граф связей с заказчиками + контракты
+/graph             Vis.js граф «заказчик ↔ победитель» с HUD-стилем
+/map               Leaflet карта Узбекистана: районы Сурхандарьи +
+                   штабы заказчиков, frosted-glass панели поверх
+/compare           Side-by-side сравнение двух тендеров с подсветкой различий
+/check             Проверить любой тендер: риск-кольцо SVG, 3 флага,
+                   price-comparison bar, AI-нарратив, share, bookmark
+/complaint/{id}    Сгенерировать жалобу на тендер для антикор. агентства
+                   (mailto + copy-to-clipboard, авто-факты из БД)
 ```
+
+## Фичи UI
+
+- 🎨 **Тёмная / светлая тема** (toggle в navbar или Ctrl+Shift+L)
+- 🗺️ **Карта Узбекистана как фон** на всех страницах (Leaflet decoration + параллакс)
+- 🔖 **Bookmarks** — отметить интересные тендеры (хранятся в localStorage)
+- 📤 **Share** — Telegram / WhatsApp / Email / Copy-link на странице тендера
+- 📊 **Skeleton-loaders, tooltips, page transitions**
+- 📱 **Mobile-friendly** — hamburger-menu, 1-column layouts
+- 🎯 **Open Graph preview** — красивый превью в Telegram/WhatsApp/Slack
 
 ## Запуск локально
 

@@ -94,6 +94,30 @@
     </div>
 </div>
 
+<div class="panel" style="max-width:1400px;margin:0 auto 16px;padding:20px 24px;">
+    <div class="panel-h">
+        <h2><i class="fas fa-chart-line"></i> Динамика по месяцам</h2>
+        <span class="panel-tag" id="trendsTag">—</span>
+    </div>
+    <div style="height: 280px"><canvas id="trendsChart"></canvas></div>
+</div>
+
+<div class="panel" style="max-width:1400px;margin:0 auto 16px;padding:20px 24px;">
+    <div class="panel-h">
+        <h2><i class="fas fa-th"></i> Heatmap: топ-10 категорий × месяцы</h2>
+        <span class="panel-tag">avg risk</span>
+    </div>
+    <div class="hm-wrap" id="heatmap">
+        <div class="feed-skel">Загрузка…</div>
+    </div>
+    <div class="hm-legend">
+        <span class="hm-leg-item"><span class="hm-leg-cell" style="background:#27ae60"></span>низкий</span>
+        <span class="hm-leg-item"><span class="hm-leg-cell" style="background:#f39c12"></span>средний</span>
+        <span class="hm-leg-item"><span class="hm-leg-cell" style="background:#e74c3c"></span>высокий</span>
+        <span class="hm-leg-item"><span class="hm-leg-cell" style="background:rgba(30,42,58,0.5)"></span>нет данных</span>
+    </div>
+</div>
+
 <div class="panel companies-panel">
     <div class="panel-h">
         <h2><i class="fas fa-fire"></i> Топ подозрительных победителей</h2>
@@ -196,6 +220,19 @@
 .company-card .cc-stats .red b { color:#ff6f61; }
 .company-card .cc-bar { height:6px; background:var(--bg-input); border-radius:3px; overflow:hidden; margin-top:10px; }
 .company-card .cc-bar > div { height:100%; background:linear-gradient(90deg, var(--success), var(--accent-amber), #e74c3c); border-radius:3px; transition: width 1s; }
+
+/* ===== Heatmap ===== */
+.hm-wrap { overflow-x: auto; }
+.hm-grid { display: grid; gap: 2px; min-width: 600px; }
+.hm-row { display: grid; grid-template-columns: 220px repeat(var(--cols), 1fr); gap: 2px; align-items: center; }
+.hm-cell { height: 28px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 10px; color: rgba(255,255,255,0.85); cursor: pointer; transition: transform .15s; }
+.hm-cell:hover { transform: scale(1.15); z-index: 10; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+.hm-cell.empty { background: rgba(30,42,58,0.5); color: var(--text-dim); }
+.hm-label { font-size: 11px; color: var(--text-secondary); padding: 4px 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hm-head { font-family: var(--font-mono); font-size: 9px; color: var(--text-dim); text-align: center; padding: 4px 0; text-transform: uppercase; letter-spacing: 1px; }
+.hm-legend { display: flex; gap: 16px; padding-top: 12px; border-top: 1px solid var(--border); margin-top: 12px; flex-wrap: wrap; }
+.hm-leg-item { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+.hm-leg-cell { width: 18px; height: 12px; border-radius: 2px; }
 </style>
 {% endblock %}
 
@@ -316,10 +353,73 @@ async function loadCompanies() {
     }).join('');
 }
 
+async function loadTrends() {
+    const r = await api('/api/analytics/trends');
+    const rows = r.data || [];
+    document.getElementById('trendsTag').textContent = `${rows.length} мес.`;
+    if (!rows.length) return;
+    new Chart(document.getElementById('trendsChart'), {
+        type: 'line',
+        data: {
+            labels: rows.map(x => x.bucket),
+            datasets: [
+                { label: 'Всего тендеров', data: rows.map(x => +x.total), borderColor: '#00acc1', backgroundColor: 'rgba(0,172,193,0.12)', fill: true, tension: 0.3, pointRadius: 3 },
+                { label: 'Жёлтые', data: rows.map(x => +x.yellow), borderColor: '#e67e22', backgroundColor: 'rgba(230,126,34,0.18)', fill: false, tension: 0.3, pointRadius: 3 },
+                { label: 'Красные ≥70', data: rows.map(x => +x.red), borderColor: '#e74c3c', backgroundColor: 'rgba(231,76,60,0.25)', fill: false, tension: 0.3, pointRadius: 4, borderWidth: 2.5 },
+            ],
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: {
+                x: { ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: 'rgba(30,42,58,0.3)' } },
+                y: { ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: 'rgba(30,42,58,0.3)' }, beginAtZero: true },
+            },
+            plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 11 } } } },
+        },
+    });
+}
+
+function colorForRiskHm(r) {
+    if (!r) return 'rgba(30,42,58,0.5)';
+    // 0..100 → green→amber→red интерполяция
+    const t = Math.min(1, r / 100);
+    const g = Math.round(174 - t * 100);
+    const rr = Math.round(39 + t * 192);
+    return `rgba(${rr}, ${g}, 60, ${0.35 + t * 0.5})`;
+}
+
+async function loadHeatmap() {
+    const r = await api('/api/analytics/heatmap?top_categories=10');
+    const cats = r.categories || [];
+    const buckets = r.buckets || [];
+    const matrix = r.matrix || [];
+    const root = document.getElementById('heatmap');
+    if (!cats.length || !buckets.length) {
+        root.innerHTML = '<div class="feed-skel">Недостаточно данных для тепловой карты</div>';
+        return;
+    }
+    let html = `<div class="hm-grid" style="--cols:${buckets.length}">`;
+    html += `<div class="hm-row"><div class="hm-label"></div>`
+        + buckets.map(b => `<div class="hm-head">${b}</div>`).join('') + `</div>`;
+    cats.forEach((cat, i) => {
+        const cells = matrix[i].map(c => {
+            const empty = !c.n;
+            return `<div class="hm-cell ${empty?'empty':''}"
+                style="background:${empty?'':colorForRiskHm(c.avg_risk)}"
+                title="${cat.slice(0,40)} · ${c.n} лотов · risk ${c.avg_risk}${c.red?' · '+c.red+' красных':''}">${empty?'':c.avg_risk}</div>`;
+        }).join('');
+        html += `<div class="hm-row"><div class="hm-label" title="${cat}">${cat.slice(0,40)}${cat.length>40?'…':''}</div>${cells}</div>`;
+    });
+    html += '</div>';
+    root.innerHTML = html;
+}
+
 (async () => {
     try { await loadStats(); } catch (e) { console.error(e); }
     try { await loadCategories(); } catch (e) { console.error(e); }
     try { await loadFeed(); } catch (e) { console.error(e); }
+    try { await loadTrends(); } catch (e) { console.error(e); }
+    try { await loadHeatmap(); } catch (e) { console.error(e); }
     try { await loadCompanies(); } catch (e) { console.error(e); }
 })();
 </script>

@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="50%" r="80%">
+      <stop offset="0%" stop-color="#1a2340"/>
+      <stop offset="60%" stop-color="#0a0e17"/>
+      <stop offset="100%" stop-color="#050810"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#c0392b" stop-opacity="0.3"/>
+      <stop offset="50%" stop-color="#c0392b" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#c0392b" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="title" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#edf2f7"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </linearGradient>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#1e2a3a" stroke-width="0.5" opacity="0.3"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <!-- Corner brackets -->
+  <g stroke="#c0392b" stroke-width="3" fill="none" opacity="0.6">
+    <path d="M 30 30 L 30 80 M 30 30 L 80 30"/>
+    <path d="M 1170 30 L 1170 80 M 1170 30 L 1120 30"/>
+    <path d="M 30 600 L 30 550 M 30 600 L 80 600"/>
+    <path d="M 1170 600 L 1170 550 M 1170 600 L 1120 600"/>
+  </g>
+
+  <!-- Pulsating eye logo -->
+  <g transform="translate(85, 95)">
+    <circle cx="0" cy="0" r="32" fill="#c0392b" opacity="0.95"/>
+    <circle cx="0" cy="0" r="46" fill="none" stroke="#c0392b" stroke-width="2" opacity="0.4"/>
+    <circle cx="0" cy="0" r="60" fill="none" stroke="#c0392b" stroke-width="1" opacity="0.2"/>
+    <circle cx="0" cy="0" r="10" fill="#050810"/>
+  </g>
+
+  <!-- Tag pill -->
+  <g transform="translate(160, 80)">
+    <rect x="0" y="0" width="270" height="32" rx="16" fill="#c0392b" fill-opacity="0.1" stroke="#c0392b" stroke-opacity="0.3" stroke-width="1"/>
+    <circle cx="20" cy="16" r="4" fill="#c0392b"/>
+    <text x="36" y="21" font-family="JetBrains Mono, monospace" font-size="12" fill="#c0392b" letter-spacing="2">KUS · LIVE · ANTI-CORRUPTION</text>
+  </g>
+
+  <!-- Main title -->
+  <text x="160" y="200" font-family="JetBrains Mono, monospace" font-size="68" font-weight="700" fill="url(#title)">
+    Kill Unlawful
+  </text>
+  <text x="160" y="280" font-family="JetBrains Mono, monospace" font-size="68" font-weight="700" fill="url(#title)">
+    Schemes
+  </text>
+
+  <!-- Subtitle -->
+  <text x="160" y="335" font-family="Manrope, sans-serif" font-size="22" fill="#94a3b8">
+    Алгоритмическая аналитика рисков коррупции
+  </text>
+  <text x="160" y="367" font-family="Manrope, sans-serif" font-size="22" fill="#94a3b8">
+    в государственных закупках Узбекистана
+  </text>
+
+  <!-- KPI numbers row -->
+  <g transform="translate(160, 440)">
+    <!-- Tenders -->
+    <text x="0" y="0" font-family="JetBrains Mono, monospace" font-size="48" font-weight="700" fill="#3498db">5 078</text>
+    <text x="0" y="30" font-family="JetBrains Mono, monospace" font-size="11" fill="#5a6a80" letter-spacing="2">ТЕНДЕРОВ</text>
+
+    <!-- Red flags -->
+    <text x="290" y="0" font-family="JetBrains Mono, monospace" font-size="48" font-weight="700" fill="#e74c3c">11</text>
+    <text x="290" y="30" font-family="JetBrains Mono, monospace" font-size="11" fill="#5a6a80" letter-spacing="2">КРАСНЫХ ФЛАГОВ</text>
+
+    <!-- USD -->
+    <text x="500" y="0" font-family="JetBrains Mono, monospace" font-size="48" font-weight="700" fill="#00acc1">$4.06B</text>
+    <text x="500" y="30" font-family="JetBrains Mono, monospace" font-size="11" fill="#5a6a80" letter-spacing="2">ОБЪЁМ КОНТРАКТОВ</text>
+
+    <!-- Direct purchases -->
+    <text x="790" y="0" font-family="JetBrains Mono, monospace" font-size="48" font-weight="700" fill="#e67e22">12</text>
+    <text x="790" y="30" font-family="JetBrains Mono, monospace" font-size="11" fill="#5a6a80" letter-spacing="2">ПРЯМЫХ ЗАКУПОК</text>
+  </g>
+
+  <!-- Bottom strip -->
+  <g transform="translate(160, 555)">
+    <text x="0" y="0" font-family="JetBrains Mono, monospace" font-size="13" fill="#5a6a80" letter-spacing="2">SOURCE · data.egov.uz</text>
+    <text x="800" y="0" font-family="JetBrains Mono, monospace" font-size="13" fill="#5a6a80" letter-spacing="2">github.com/kus-team/kus</text>
+  </g>
+</svg>

@@ -85,6 +85,16 @@ def page_check(request: Request):
     return templates.TemplateResponse("check.html", {"request": request})
 
 
+@app.get("/compare", response_class=HTMLResponse)
+def page_compare(request: Request):
+    return templates.TemplateResponse("compare.html", {"request": request})
+
+
+@app.get("/complaint/{tender_id}", response_class=HTMLResponse)
+def page_complaint(request: Request, tender_id: int):
+    return templates.TemplateResponse("complaint.html", {"request": request, "tender_id": tender_id})
+
+
 @app.get("/graph", response_class=HTMLResponse)
 def page_graph(request: Request):
     return templates.TemplateResponse("graph.html", {"request": request})
@@ -369,6 +379,104 @@ def tender_explain(tender_id: int, force: bool = Query(False, description="пе�
 @app.get("/api/graph/network")
 def graph_network(min_wins: int = Query(2, ge=1, le=50), limit_pairs: int = Query(200, ge=1, le=1000)) -> dict[str, Any]:
     return build_network(min_wins=min_wins, limit_pairs=limit_pairs)
+
+
+# ------------------------------------------------------------------ Live UZEX feed
+
+@app.get("/api/live/xarid")
+def live_xarid() -> dict[str, Any]:
+    from backend.services.xarid import fetch_recent
+    return fetch_recent()
+
+
+# ------------------------------------------------------------------ Trends + Heatmap
+
+@app.get("/api/analytics/trends")
+def trends() -> dict[str, Any]:
+    """Помесячная динамика: общее число + красные."""
+    return {"data": fetch_all("""
+        SELECT TO_CHAR(date, 'YYYY-MM') AS bucket,
+               COUNT(*)                  AS total,
+               SUM(CASE WHEN risk_score >= %(red)s THEN 1 ELSE 0 END) AS red,
+               SUM(CASE WHEN risk_score >= %(yel)s AND risk_score < %(red)s THEN 1 ELSE 0 END) AS yellow,
+               COALESCE(SUM(amount_uzs), 0) AS total_uzs
+        FROM tenders
+        WHERE date IS NOT NULL
+        GROUP BY 1
+        ORDER BY 1
+    """, {"red": RISK_RED, "yel": RISK_YELLOW})}
+
+
+@app.get("/api/analytics/heatmap")
+def heatmap(top_categories: int = Query(10, ge=3, le=30)) -> dict[str, Any]:
+    """Heatmap: top-N категорий × месяцы → avg risk score."""
+    cats = fetch_all("""
+        SELECT category, COUNT(*) AS n
+        FROM tenders WHERE category IS NOT NULL AND category <> '' AND date IS NOT NULL
+        GROUP BY category
+        ORDER BY n DESC LIMIT %(lim)s
+    """, {"lim": top_categories})
+    cat_list = [c["category"] for c in cats]
+    if not cat_list:
+        return {"categories": [], "buckets": [], "matrix": []}
+
+    placeholders = ",".join(f"%(c{i})s" for i in range(len(cat_list)))
+    params = {f"c{i}": c for i, c in enumerate(cat_list)}
+    cells = fetch_all(f"""
+        SELECT category,
+               TO_CHAR(date, 'YYYY-MM') AS bucket,
+               COUNT(*) AS n,
+               COALESCE(ROUND(AVG(risk_score), 0), 0) AS avg_risk,
+               SUM(CASE WHEN risk_score >= 70 THEN 1 ELSE 0 END) AS red
+        FROM tenders
+        WHERE date IS NOT NULL AND category IN ({placeholders})
+        GROUP BY 1, 2
+        ORDER BY 2
+    """, params)
+    buckets = sorted({c["bucket"] for c in cells})
+    cell_map = {(c["category"], c["bucket"]): c for c in cells}
+    matrix = [[cell_map.get((cat, b), {"n": 0, "avg_risk": 0, "red": 0}) for b in buckets] for cat in cat_list]
+    return {"categories": cat_list, "buckets": buckets, "matrix": matrix}
+
+
+# ------------------------------------------------------------------ Compare two tenders
+
+@app.get("/api/compare")
+def compare_tenders(a: int = Query(...), b: int = Query(...)) -> dict[str, Any]:
+    ta = fetch_one("SELECT * FROM tenders WHERE id = %s", (a,))
+    tb = fetch_one("SELECT * FROM tenders WHERE id = %s", (b,))
+    if not ta or not tb:
+        raise HTTPException(404, "one of tenders not found")
+    return {"a": ta, "b": tb}
+
+
+# ------------------------------------------------------------------ CSV export
+
+@app.get("/api/export/tenders.csv")
+def export_csv(min_risk: int = Query(0, ge=0, le=100), limit: int = Query(5000, ge=1, le=50000)):
+    import csv, io
+    from fastapi.responses import StreamingResponse
+    rows = fetch_all("""
+        SELECT id, source_dataset, lot_id, contract_id, title,
+               customer_tin, customer_name, winner_tin, winner_name,
+               amount_uzs, amount_usd, date, category, purchase_method,
+               is_direct_purchase, risk_score
+        FROM tenders
+        WHERE risk_score >= %(min_risk)s
+        ORDER BY risk_score DESC, amount_uzs DESC
+        LIMIT %(lim)s
+    """, {"min_risk": min_risk, "lim": limit})
+    buf = io.StringIO()
+    if rows:
+        w = csv.DictWriter(buf, fieldnames=list(rows[0].keys()), extrasaction="ignore")
+        w.writeheader()
+        for r in rows:
+            w.writerow({k: ("" if v is None else v) for k, v in r.items()})
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="kus-tenders-min{min_risk}.csv"'},
+    )
 
 
 # ------------------------------------------------------------------ Map (regions)

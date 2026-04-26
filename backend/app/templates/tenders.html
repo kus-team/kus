@@ -32,6 +32,7 @@
             <option value="date_asc">Дата ↑</option>
         </select>
         <button class="btn btn-primary" onclick="load(0)"><i class="fas fa-bolt"></i> Применить</button>
+        <a class="btn btn-secondary" id="exportBtn" href="/api/export/tenders.csv?min_risk=0" download data-tooltip="Скачать CSV с текущим фильтром"><i class="fas fa-file-csv"></i> CSV</a>
     </div>
 
     <div id="results" class="results"></div>
@@ -167,7 +168,10 @@ function renderCurrent(data) {
             <div class="t-card ${cls}" style="animation-delay:${i * 25}ms" onclick="window.location.href='/tenders/${t.id}'">
                 <div class="t-head">
                     <div class="t-title" title="${t.title || ''}">${(t.title || '—').slice(0, 110)}${(t.title || '').length > 110 ? '…' : ''}</div>
-                    <div class="t-score ${cls}">${t.risk_score ?? 0}</div>
+                    <div style="display:flex;align-items:center;gap:6px">
+                        ${bookmarkButton(t.id, t.title, t.risk_score)}
+                        <div class="t-score ${cls}">${t.risk_score ?? 0}</div>
+                    </div>
                 </div>
                 <div class="t-flags">${flagPills(flags)}</div>
                 <div class="t-meta">
@@ -200,6 +204,14 @@ function renderCurrent(data) {
 function next() { if (offset + PAGE < total) load(offset + PAGE); }
 function prev() { if (offset >= PAGE) load(offset - PAGE); }
 document.getElementById('fQ').addEventListener('keydown', e => { if (e.key === 'Enter') load(0); });
+
+// Update CSV export link with current filter
+function syncExportLink() {
+    document.getElementById('exportBtn').href = `/api/export/tenders.csv?min_risk=${minRisk}&limit=5000`;
+}
+document.querySelectorAll('.pill').forEach(b => b.addEventListener('click', syncExportLink));
+syncExportLink();
+
 load(0);
 </script>
 {% endblock %}

@@ -1,44 +1,43 @@
--- HalolMap — схема БД
--- Идемпотентна: можно запускать повторно.
 
-CREATE EXTENSION IF NOT EXISTS pg_trgm;     -- для ILIKE-поиска по названию
+
+CREATE EXTENSION IF NOT EXISTS pg_trgm;     
 CREATE EXTENSION IF NOT EXISTS btree_gin;
 
--- Справочник ИНН → название (заполняется по мере появления данных)
+
 CREATE TABLE IF NOT EXISTS org_directory (
     tin         TEXT PRIMARY KEY,
     name        TEXT NOT NULL,
-    source      TEXT,                       -- 'tender_row' | 'manual' | 'external_api'
+    source      TEXT,                       
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Основная таблица тендеров
+
 CREATE TABLE IF NOT EXISTS tenders (
     id                  BIGSERIAL PRIMARY KEY,
-    source_dataset      TEXT NOT NULL,              -- structId исходного датасета
-    lot_id              TEXT NOT NULL DEFAULT '',   -- Lotraqami (для UNIQUE без COALESCE)
-    contract_id         TEXT NOT NULL DEFAULT '',   -- Shartnomaraqami
-    title               TEXT,                       -- Predmeti... (наименование)
-    customer_tin        TEXT,                       -- ИНН заказчика
-    customer_name       TEXT,                       -- из org_directory, подхватывается
-    winner_tin          TEXT,                       -- ИНН победителя/поставщика
-    winner_name         TEXT,                       -- имя поставщика
-    amount_uzs          NUMERIC(18,2),              -- нормализовано к сумам
-    amount_usd          NUMERIC(18,2),              -- = amount_uzs / UZS_PER_USD (на момент загрузки)
-    currency_raw        TEXT,                       -- исходная валюта
-    date                DATE,                       -- дата контракта
-    category            TEXT,                       -- Kategoriyasi
-    funding_source      TEXT,                       -- Moliyalashtirish manbai
-    purchase_method     TEXT,                       -- XaridTuri / Togridantogri…
+    source_dataset      TEXT NOT NULL,              
+    lot_id              TEXT NOT NULL DEFAULT '',   
+    contract_id         TEXT NOT NULL DEFAULT '',   
+    title               TEXT,                       
+    customer_tin        TEXT,                       
+    customer_name       TEXT,                       
+    winner_tin          TEXT,                       
+    winner_name         TEXT,                       
+    amount_uzs          NUMERIC(18,2),              
+    amount_usd          NUMERIC(18,2),              
+    currency_raw        TEXT,                       
+    date                DATE,                       
+    category            TEXT,                       
+    funding_source      TEXT,                       
+    purchase_method     TEXT,                       
     is_direct_purchase  BOOLEAN NOT NULL DEFAULT FALSE,
-    risk_score          SMALLINT,                   -- 0..100
-    risk_flags          JSONB,                      -- {"monopoly":true,"overpriced":true,"no_compete":true,"pair_wins":N,"category_avg":..}
-    flag_monopoly       BOOLEAN NOT NULL DEFAULT FALSE,   -- денормализовано для быстрых SUM(CASE)
+    risk_score          SMALLINT,                   
+    risk_flags          JSONB,                     
+    flag_monopoly       BOOLEAN NOT NULL DEFAULT FALSE,   
     flag_no_compete     BOOLEAN NOT NULL DEFAULT FALSE,
     flag_overpriced     BOOLEAN NOT NULL DEFAULT FALSE,
-    ai_narrative        TEXT,                       -- кеш LLM-объяснения «почему подозрительно»
-    ai_narrative_at     TIMESTAMPTZ,                -- когда сгенерировано
-    raw                 JSONB NOT NULL,             -- исходная строка датасета (для отладки)
+    ai_narrative        TEXT,                       
+    ai_narrative_at     TIMESTAMPTZ,                
+    raw                 JSONB NOT NULL,             
     created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (source_dataset, lot_id, contract_id)
@@ -52,7 +51,7 @@ CREATE INDEX IF NOT EXISTS idx_tenders_risk          ON tenders (risk_score DESC
 CREATE INDEX IF NOT EXISTS idx_tenders_title_trgm    ON tenders USING gin (title gin_trgm_ops);
 CREATE INDEX IF NOT EXISTS idx_tenders_pair          ON tenders (customer_tin, winner_tin);
 
--- Кэш средних цен по категории (для расчёта «завышенной цены»)
+
 CREATE TABLE IF NOT EXISTS analytics_cache (
     category      TEXT PRIMARY KEY,
     avg_price     NUMERIC(18,2) NOT NULL,
@@ -61,7 +60,7 @@ CREATE TABLE IF NOT EXISTS analytics_cache (
     updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Лог загрузок датасетов (чтобы видеть когда что обновлялось)
+
 CREATE TABLE IF NOT EXISTS ingest_log (
     id              BIGSERIAL PRIMARY KEY,
     source_dataset  TEXT NOT NULL,
@@ -75,7 +74,7 @@ CREATE TABLE IF NOT EXISTS ingest_log (
 
 CREATE INDEX IF NOT EXISTS idx_ingest_log_dataset ON ingest_log (source_dataset, started_at DESC);
 
--- Автообновление updated_at
+
 CREATE OR REPLACE FUNCTION touch_updated_at() RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = now();

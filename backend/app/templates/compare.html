@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% set active_page = "compare" %}
+{% block title %}Сравнение тендеров{% endblock %}
+
+{% block content %}
+<div class="page" id="page">
+    <div class="page-header">
+        <div>
+            <h1><i class="fas fa-code-compare"></i> Сравнение двух тендеров</h1>
+            <p class="subtitle">Введи два ID тендеров — увидишь риск-профили рядом с подсветкой различий.</p>
+        </div>
+    </div>
+
+    <div class="cmp-inputs">
+        <div class="check-box">
+            <span class="cmp-label">A</span>
+            <input type="text" id="idA" placeholder="ID тендера" inputmode="numeric">
+        </div>
+        <div class="check-box">
+            <span class="cmp-label">B</span>
+            <input type="text" id="idB" placeholder="ID тендера" inputmode="numeric">
+        </div>
+        <button class="btn btn-primary" onclick="compareNow()"><i class="fas fa-bolt"></i> Сравнить</button>
+    </div>
+
+    <div class="quick">
+        <span>Примеры:</span>
+        <button class="quick-tag" onclick="fillAndCompare(1, 2)">Сравнить #1 и #2</button>
+        <button class="quick-tag" onclick="fillAndCompare(100, 200)">Сравнить #100 и #200</button>
+    </div>
+
+    <div id="result"></div>
+</div>
+
+<style>
+.page { max-width: 1400px; margin: 0 auto; padding: 32px 24px; }
+.page-header h1 { font-family: var(--font-mono); font-size: 24px; display: flex; align-items: center; gap: 12px; }
+.page-header h1 i { color: var(--accent-red-dim); }
+.page-header .subtitle { color: var(--text-secondary); font-size: 13px; margin-top: 4px; }
+
+.cmp-inputs { display: flex; gap: 12px; align-items: center; margin: 28px 0 12px; flex-wrap: wrap; }
+.check-box { display: flex; gap: 10px; align-items: center; background: rgba(18,25,41,0.82); backdrop-filter: blur(12px); border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 4px 12px; flex: 1; min-width: 220px; transition: border-color .2s; }
+.check-box:focus-within { border-color: var(--accent-red); box-shadow: 0 0 0 3px var(--accent-red-glow); }
+.check-box input { flex: 1; background: transparent; border: none; color: var(--text-primary); padding: 12px 6px; font-size: 15px; font-family: var(--font-mono); outline: none; }
+.cmp-label { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--accent-red); background: rgba(231,76,60,0.12); padding: 4px 10px; border-radius: 8px; letter-spacing: 1px; }
+
+.quick { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+.quick-tag { background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text-secondary); padding: 5px 12px; border-radius: 14px; font-family: var(--font-mono); font-size: 11px; cursor: pointer; transition: all .2s; }
+.quick-tag:hover { border-color: var(--accent-red-dim); color: var(--accent-red); }
+
+#result { margin-top: 28px; }
+.cmp-skel { color: var(--text-dim); font-size: 13px; padding: 24px; text-align: center; }
+.cmp-empty { background: rgba(18,25,41,0.82); backdrop-filter: blur(12px); border: 1px dashed var(--border-light); border-radius: var(--radius-lg); padding: 48px 24px; text-align: center; color: var(--text-dim); font-size: 13px; }
+.cmp-empty i { font-size: 36px; color: var(--accent-red-dim); margin-bottom: 14px; display: block; }
+
+/* ===== Two-column layout ===== */
+.cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 900px) { .cmp-grid { grid-template-columns: 1fr; } }
+
+.cmp-col {
+    background: rgba(18,25,41,0.82); backdrop-filter: blur(12px);
+    border: 1px solid var(--border-light); border-radius: var(--radius-lg);
+    padding: 22px; position: relative; overflow: hidden;
+}
+.cmp-col::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent-red), transparent); }
+.cmp-col.red    { border-color: rgba(231,76,60,0.3); }
+.cmp-col.amber  { border-color: rgba(230,126,34,0.3); }
+.cmp-col.green  { border-color: rgba(39,174,96,0.3); }
+
+.cmp-head { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+.cmp-head .cmp-tag { font-family: var(--font-mono); font-size: 12px; font-weight: 700; color: var(--accent-red); background: rgba(231,76,60,0.12); padding: 4px 10px; border-radius: 8px; letter-spacing: 1px; }
+.cmp-head .cmp-link { margin-left: auto; font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); text-decoration: none; text-transform: uppercase; letter-spacing: 1px; transition: color .2s; }
+.cmp-head .cmp-link:hover { color: var(--text-primary); }
+
+/* Risk ring */
+.cmp-ring-wrap { display: flex; align-items: center; gap: 18px; margin-bottom: 16px; }
+.cmp-ring { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
+.cmp-ring svg { transform: rotate(-90deg); }
+.cmp-ring .bg { stroke: var(--bg-input); }
+.cmp-ring .fg { transition: stroke-dashoffset 1.5s cubic-bezier(0.22, 1, 0.36, 1); stroke-linecap: round; }
+.cmp-col.red   .cmp-ring .fg { stroke: #e74c3c; filter: drop-shadow(0 0 6px rgba(231,76,60,0.6)); }
+.cmp-col.amber .cmp-ring .fg { stroke: var(--accent-amber); filter: drop-shadow(0 0 6px rgba(230,126,34,0.5)); }
+.cmp-col.green .cmp-ring .fg { stroke: var(--success); filter: drop-shadow(0 0 6px rgba(39,174,96,0.5)); }
+.cmp-ring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.cmp-ring-text .num { font-family: var(--font-mono); font-size: 32px; font-weight: 700; line-height: 1; }
+.cmp-col.red   .cmp-ring-text .num { color: #ff6f61; }
+.cmp-col.amber .cmp-ring-text .num { color: var(--accent-amber); }
+.cmp-col.green .cmp-ring-text .num { color: var(--success); }
+.cmp-ring-text .of { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); margin-top: 2px; letter-spacing: 1px; }
+
+.cmp-zone { font-family: var(--font-mono); font-size: 11px; padding: 4px 10px; border-radius: 12px; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; display: inline-block; margin-bottom: 8px; }
+.cmp-col.red   .cmp-zone { background: rgba(231,76,60,0.15);  color: #ff6f61; }
+.cmp-col.amber .cmp-zone { background: rgba(230,126,34,0.15); color: var(--accent-amber); }
+.cmp-col.green .cmp-zone { background: rgba(39,174,96,0.15);  color: var(--success); }
+.cmp-title-line { font-size: 13px; color: var(--text-primary); line-height: 1.4; }
+
+/* Flag badges */
+.cmp-flags { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 16px; }
+.cmp-flag { font-family: var(--font-mono); font-size: 10px; padding: 4px 10px; border-radius: 10px; text-transform: uppercase; letter-spacing: 1px; background: var(--bg-elevated); color: var(--text-dim); border: 1px solid var(--border); }
+.cmp-flag.fired { background: rgba(231,76,60,0.18); color: #ff6f61; border-color: rgba(231,76,60,0.3); }
+
+/* Field rows */
+.cmp-fields { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.cmp-field { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; background: var(--bg-elevated); border-radius: var(--radius); }
+.cmp-field .k { font-family: var(--font-mono); font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+.cmp-field .v { font-family: var(--font-mono); font-size: 12px; word-break: break-word; }
+.cmp-field .v.same { color: var(--text-dim); }
+.cmp-field .v.diff { color: var(--text-primary); background: rgba(230,126,34,0.12); padding: 2px 6px; border-radius: 4px; align-self: flex-start; border-left: 2px solid var(--accent-amber); }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function fillAndCompare(a, b) {
+    document.getElementById('idA').value = a;
+    document.getElementById('idB').value = b;
+    compareNow();
+}
+
+function showEmptyState() {
+    document.getElementById('result').innerHTML = `
+        <div class="cmp-empty">
+            <i class="fas fa-code-compare"></i>
+            <div>Введи два ID тендеров в поля выше — система покажет риск-профили рядом и подсветит различия.</div>
+            <div style="margin-top:10px; font-size:12px;">Подсказка: ID можно взять со страниц <a href="/tenders" style="color:var(--accent-cyan)">Тендеры</a> или <a href="/companies" style="color:var(--accent-cyan)">Компании</a>.</div>
+        </div>`;
+}
+
+async function compareNow() {
+    const a = (document.getElementById('idA').value || '').trim();
+    const b = (document.getElementById('idB').value || '').trim();
+    if (!a || !b) { showEmptyState(); return; }
+
+    const out = document.getElementById('result');
+    out.innerHTML = '<div class="cmp-skel"><i class="fas fa-spinner fa-spin"></i> Сравниваю…</div>';
+
+    try {
+        const data = await api(`/api/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`);
+        if (!data || !data.a || !data.b) {
+            out.innerHTML = '<div class="cmp-skel" style="color:#ff6f61">Один из тендеров не найден.</div>';
+            return;
+        }
+        renderCompare(data.a, data.b);
+    } catch (e) {
+        out.innerHTML = `<div class="cmp-skel" style="color:#ff6f61">Ошибка: ${e.message}</div>`;
+    }
+}
+
+function clsForRisk(r) { return r >= 70 ? 'red' : r >= 30 ? 'amber' : 'green'; }
+function zoneText(c)   { return c === 'red' ? 'ВЫСОКИЙ РИСК' : c === 'amber' ? 'СРЕДНИЙ' : 'НИЗКИЙ'; }
+
+function renderRing(score, cls) {
+    const R = 48, CIRC = 2 * Math.PI * R;
+    const offset = CIRC * (1 - (score || 0) / 100);
+    return `
+        <div class="cmp-ring">
+            <svg width="110" height="110" viewBox="0 0 110 110">
+                <circle class="bg" cx="55" cy="55" r="${R}" stroke-width="8" fill="none" />
+                <circle class="fg" cx="55" cy="55" r="${R}" stroke-width="8" fill="none"
+                        stroke-dasharray="${CIRC}" stroke-dashoffset="${CIRC}"
+                        data-target="${offset}" />
+            </svg>
+            <div class="cmp-ring-text">
+                <div class="num">${score ?? 0}</div>
+                <div class="of">/ 100</div>
+            </div>
+        </div>`;
+}
+
+function renderFlags(flags) {
+    const f = flags || {};
+    const defs = [
+        { id: 'monopoly',   lbl: 'Монополия' },
+        { id: 'no_compete', lbl: 'Без конкурса' },
+        { id: 'overpriced', lbl: 'Переплата' },
+    ];
+    return `<div class="cmp-flags">
+        ${defs.map(d => `<span class="cmp-flag ${f[d.id] ? 'fired' : ''}">${f[d.id] ? '🚨 ' : ''}${d.lbl}</span>`).join('')}
+    </div>`;
+}
+
+function valStr(v) { return (v === null || v === undefined || v === '') ? '—' : String(v); }
+
+function renderCol(t, label, otherFields) {
+    const score = t.risk_score ?? 0;
+    const cls = clsForRisk(score);
+    const flags = t.risk_flags || {};
+
+    const fields = [
+        { k: 'ID',              v: valStr(t.id) },
+        { k: 'Лот',             v: valStr(t.lot_id) },
+        { k: 'Контракт',        v: valStr(t.contract_id) },
+        { k: 'Название',        v: valStr(t.title) },
+        { k: 'Заказчик ИНН',    v: valStr(t.customer_tin) },
+        { k: 'Заказчик',        v: valStr(t.customer_name) },
+        { k: 'Победитель ИНН',  v: valStr(t.winner_tin) },
+        { k: 'Победитель',      v: valStr(t.winner_name) },
+        { k: 'Сумма (UZS)',     v: t.amount_uzs != null ? fmtUzs(t.amount_uzs) : '—', raw: t.amount_uzs },
+        { k: 'Сумма (USD)',     v: t.amount_usd != null ? fmtUsd(t.amount_usd) : '—', raw: t.amount_usd },
+        { k: 'Дата',            v: valStr(t.date) },
+        { k: 'Категория',       v: valStr(t.category) },
+        { k: 'Способ закупки',  v: valStr(t.purchase_method) },
+        { k: 'Прямая закупка',  v: t.is_direct_purchase ? 'да' : 'нет' },
+    ];
+
+    const titleShort = (t.title || '').slice(0, 90) + ((t.title || '').length > 90 ? '…' : '');
+
+    return `
+    <div class="cmp-col ${cls}">
+        <div class="cmp-head">
+            <span class="cmp-tag">${label}</span>
+            <a href="/tenders/${t.id}" class="cmp-link">Открыть полный профиль <i class="fas fa-arrow-right"></i></a>
+        </div>
+        <div class="cmp-ring-wrap">
+            ${renderRing(score, cls)}
+            <div>
+                <span class="cmp-zone">${zoneText(cls)}</span>
+                <div class="cmp-title-line">${titleShort || '<span style="color:var(--text-dim)">без названия</span>'}</div>
+            </div>
+        </div>
+        ${renderFlags(flags)}
+        <div class="cmp-fields">
+            ${fields.map((f, i) => {
+                const other = otherFields[i];
+                const isDiff = String(f.v) !== String(other.v);
+                return `<div class="cmp-field">
+                    <div class="k">${f.k}</div>
+                    <div class="v ${isDiff ? 'diff' : 'same'}">${f.v}</div>
+                </div>`;
+            }).join('')}
+        </div>
+    </div>`;
+}
+
+function buildFieldList(t) {
+    return [
+        { k: 'ID', v: valStr(t.id) },
+        { k: 'Лот', v: valStr(t.lot_id) },
+        { k: 'Контракт', v: valStr(t.contract_id) },
+        { k: 'Название', v: valStr(t.title) },
+        { k: 'Заказчик ИНН', v: valStr(t.customer_tin) },
+        { k: 'Заказчик', v: valStr(t.customer_name) },
+        { k: 'Победитель ИНН', v: valStr(t.winner_tin) },
+        { k: 'Победитель', v: valStr(t.winner_name) },
+        { k: 'Сумма (UZS)', v: t.amount_uzs != null ? fmtUzs(t.amount_uzs) : '—' },
+        { k: 'Сумма (USD)', v: t.amount_usd != null ? fmtUsd(t.amount_usd) : '—' },
+        { k: 'Дата', v: valStr(t.date) },
+        { k: 'Категория', v: valStr(t.category) },
+        { k: 'Способ закупки', v: valStr(t.purchase_method) },
+        { k: 'Прямая закупка', v: t.is_direct_purchase ? 'да' : 'нет' },
+    ];
+}
+
+function renderCompare(a, b) {
+    const aFields = buildFieldList(a);
+    const bFields = buildFieldList(b);
+    document.getElementById('result').innerHTML = `
+        <div class="cmp-grid">
+            ${renderCol(a, 'A', bFields)}
+            ${renderCol(b, 'B', aFields)}
+        </div>`;
+    setTimeout(() => {
+        document.querySelectorAll('.cmp-ring .fg').forEach(el => {
+            el.setAttribute('stroke-dashoffset', el.dataset.target || '0');
+        });
+    }, 100);
+}
+
+document.getElementById('idA').addEventListener('keydown', e => { if (e.key === 'Enter') compareNow(); });
+document.getElementById('idB').addEventListener('keydown', e => { if (e.key === 'Enter') compareNow(); });
+
+// Стартовое состояние — пустая подсказка
+showEmptyState();
+</script>
+{% endblock %}
