@@ -76,7 +76,8 @@ def _is_round(amount: float | None) -> bool:
         return True
     if a >= 10_000_000  and a % 1_000_000  == 0:
         return True
-    if a >= 1_000_000   and a % 500_000    == 0:
+    # Для контрактов 1–10M порог % 500_000 давал 37% false positives → ужесточили до % 1M.
+    if a >= 1_000_000   and a % 1_000_000  == 0:
         return True
     return False
 
@@ -180,7 +181,8 @@ def recalc_all() -> dict[str, Any]:
             cust_total = customer_total_amount.get(ct, 0) if ct else 0
             pair_total = pair_total_amount.get((ct, wt), 0) if (ct and wt) else 0
             cust_n = customer_total_count.get(ct, 0) if ct else 0
-            f_conc = bool(cust_total > 0 and cust_n >= 3 and pair_total / cust_total > CONCENTRATION_RATIO)
+            # минимум 5 контрактов у заказчика, чтобы концентрация имела статистический смысл.
+            f_conc = bool(cust_total > 0 and cust_n >= 5 and pair_total / cust_total > CONCENTRATION_RATIO)
             f_wknd = bool(d and d.weekday() >= 5)
             f_dump = bool(amt is not None and cat_avg and float(amt) > 0 and float(amt) < cat_avg * DUMPING_MULT)
 

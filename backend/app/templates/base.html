@@ -135,14 +135,15 @@
             if (i) i.className = t === 'dark' ? 'fas fa-moon' : 'fas fa-sun';
         }
         applyTheme(localStorage.getItem(THEME_KEY) || 'dark');
-        document.getElementById('themeToggle').addEventListener('click', () => {
-            applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-        });
+        function toggleTheme() {
+            const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+            applyTheme(next);
+            // Графики не перерисовываются автоматически — мягкий reload даёт корректные axis-цвета.
+            setTimeout(() => location.reload(), 80);
+        }
+        document.getElementById('themeToggle').addEventListener('click', toggleTheme);
         document.addEventListener('keydown', e => {
-            if ((e.ctrlKey||e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'l') {
-                e.preventDefault();
-                applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-            }
+            if ((e.ctrlKey||e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'l') { e.preventDefault(); toggleTheme(); }
         });
 
         // ===== BURGER (mobile) =====
@@ -220,9 +221,15 @@
                 subdomains: 'abcd', maxZoom: 8, minZoom: 4,
             }).addTo(m);
             window.addEventListener('resize', () => m.invalidateSize());
-            // Параллакс — карта медленно движется при скролле страницы
+            // Параллакс с requestAnimationFrame — без jank на мобильных.
+            let parallaxTicking = false;
             window.addEventListener('scroll', () => {
-                el.style.transform = `translateY(${window.scrollY * 0.15}px)`;
+                if (parallaxTicking) return;
+                parallaxTicking = true;
+                requestAnimationFrame(() => {
+                    el.style.transform = `translateY(${window.scrollY * 0.15}px)`;
+                    parallaxTicking = false;
+                });
             }, { passive: true });
         })();
     </script>

@@ -93,6 +93,19 @@ def detect_role(field_name: str, already_taken: set[str]) -> str | None:
 
 _NUM_CLEAN = re.compile(r"[^\d.,-]")
 
+# «Мусорные» значения для ИНН и др. идентификаторов: заменяем на None
+_TRASH_VALUES = {"", "X", "-", "—", "?", "N/A", "Н/О", "NULL", "NONE", "0"}
+
+
+def _clean_id(v: Any) -> str | None:
+    """Очищает ИНН/ID: пустые, 'X', '—', '?', '0' → None. Иначе str.strip()."""
+    if v is None:
+        return None
+    s = str(v).strip()
+    if not s or s.upper() in _TRASH_VALUES:
+        return None
+    return s
+
 
 def parse_number(v: Any) -> float | None:
     if v is None:
@@ -124,13 +137,12 @@ def parse_date(v: Any) -> date | None:
     s = str(v).strip()
     if not s:
         return None
-    # excel serial
+    # excel serial (1900-system, 1900-01-01 → 1, но Excel считает 1900 как leap year, отсюда -2)
     if re.fullmatch(r"\d{4,6}", s):
         try:
             n = int(s)
             if 20000 < n < 80000:   # разумный диапазон (1954–2119)
-                return (_EXCEL_EPOCH + (datetime.min.replace(year=1) - datetime.min)).date() \
-                    if False else (_EXCEL_EPOCH.fromordinal(_EXCEL_EPOCH.toordinal() + n).date())
+                return _EXCEL_EPOCH.fromordinal(_EXCEL_EPOCH.toordinal() + n).date()
         except Exception:
             pass
     # ISO
@@ -251,8 +263,12 @@ def normalize_row(
             pass  # пока не используем
         elif role == "date":
             t.date = parse_date(val)
-        elif role in ("title", "customer_tin", "customer_name",
-                      "winner_tin", "winner_name", "category",
+        elif role in ("customer_tin", "winner_tin"):
+            cleaned = _clean_id(val)
+            if cleaned:
+                setattr(t, role, cleaned)
+        elif role in ("title", "customer_name",
+                      "winner_name", "category",
                       "funding_source", "purchase_method", "lot_id",
                       "contract_id", "currency_raw"):
             setattr(t, role, str(val).strip())

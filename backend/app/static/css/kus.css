@@ -1596,3 +1596,76 @@ body.page-map .page-fade-in { animation: none !important; transform: none !impor
 
 /* Active links в navbar */
 :root[data-theme="light"] .nav-links a.active { background: rgba(192,57,43,0.12); }
+
+/* ============================================
+   v3 — accessibility + ещё light-overrides
+   ============================================ */
+
+/* Focus-visible на всех интерактивных элементах */
+.btn:focus-visible,
+.theme-toggle:focus-visible,
+.bm-btn:focus-visible,
+.pill:focus-visible,
+.vt-btn:focus-visible,
+.quick-tag:focus-visible,
+.cmp-x:focus-visible,
+.bm-close:focus-visible,
+.bm-rm:focus-visible,
+.fb-sel:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+a:focus-visible,
+.case-card:focus-visible,
+.t-card:focus-visible,
+.company-card:focus-visible,
+.tow-card:focus-visible {
+    outline: 2px solid var(--accent-cyan);
+    outline-offset: 2px;
+    border-radius: var(--radius);
+}
+
+/* Light-theme: новые компоненты, которых не было в первых overrides */
+:root[data-theme="light"] .tow-card,
+:root[data-theme="light"] .xf-item,
+:root[data-theme="light"] .cmp-inline,
+:root[data-theme="light"] .extra-signals,
+:root[data-theme="light"] .similar-panel,
+:root[data-theme="light"] .case-card {
+    background: rgba(255, 255, 255, 0.85) !important;
+    border-color: var(--border-light) !important;
+}
+
+:root[data-theme="light"] .case-narrative {
+    background: rgba(192,57,43,0.06) !important;
+}
+:root[data-theme="light"] .case-card.r-amber .case-narrative { background: rgba(230,126,34,0.06) !important; }
+:root[data-theme="light"] .case-card.r-green .case-narrative { background: rgba(39,174,96,0.06) !important; }
+
+:root[data-theme="light"] .es-chip { background: rgba(230,126,34,0.10) !important; border-color: rgba(230,126,34,0.4) !important; }
+:root[data-theme="light"] .es-chip:hover { background: rgba(230,126,34,0.15) !important; }
+
+:root[data-theme="light"] .xf-pcp { background: rgba(0,172,193,0.12); }
+:root[data-theme="light"] .xf-pcp.red { background: rgba(230,126,34,0.14); }
+:root[data-theme="light"] .xf-item { border-left-color: var(--accent-cyan); }
+
+:root[data-theme="light"] .tow-tag { color: #c0392b; }
+:root[data-theme="light"] .tow-card.tow-red    { box-shadow: 0 0 30px rgba(231,76,60,0.10); }
+
+:root[data-theme="light"] .cmp-row.cmp-diff { background: rgba(230,126,34,0.10) !important; }
+
+/* Hero на дашборде в светлой теме — текст должен быть тёмным */
+:root[data-theme="light"] .hero-meta b { color: var(--text-primary); }
+:root[data-theme="light"] .hero-meta i { color: var(--accent-red); }
+
+/* Heatmap — empty cell в светлой */
+:root[data-theme="light"] .hm-cell.empty { background: rgba(214,218,226,0.6) !important; color: var(--text-dim); }
+
+/* Text overflow на длинных названиях (TOW, xf-item) */
+.tow-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* prefers-reduced-motion: уважаем системные настройки */
+@media (prefers-reduced-motion: reduce) {
+    .page-fade-in, .feed-item, .case-card, .company-card, .t-card, .xf-item { animation: none !important; }
+    * { transition: none !important; }
+}
