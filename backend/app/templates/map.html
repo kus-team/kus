@@ -63,8 +63,13 @@
 <style>
 /* Take the whole viewport below the navbar */
 body { overflow: hidden; }
-.map-bg { position: fixed; top: 56px; left: 0; right: 0; bottom: 0; background: #0a0e17; z-index: 0; }
-.leaflet-container { background: #0a0e17 !important; font-family: var(--font-ui) !important; }
+.map-bg { position: fixed; top: 56px; left: 0; right: 0; bottom: 0; background: var(--bg-darkest); z-index: 0; }
+.leaflet-container { background: var(--bg-darkest) !important; font-family: var(--font-ui) !important; cursor: crosshair !important; }
+.leaflet-container.leaflet-grab { cursor: grab !important; }
+.leaflet-dragging .leaflet-container { cursor: grabbing !important; }
+.leaflet-interactive { cursor: pointer !important; }
+/* Заметный hover-курсор на маркерах: подсветим окантовку */
+.leaflet-interactive:hover { stroke-width: 4 !important; filter: drop-shadow(0 0 8px currentColor); }
 .leaflet-control-zoom { border: 1px solid var(--border) !important; }
 .leaflet-control-zoom a { background: var(--bg-surface) !important; color: var(--text-primary) !important; border-bottom-color: var(--border) !important; }
 .leaflet-control-zoom a:hover { background: var(--bg-elevated) !important; color: var(--accent-red) !important; }
@@ -188,6 +193,24 @@ L.tileLayer(isLight
 // Сразу после init контейнер может иметь неправильный размер — пересчёт
 setTimeout(() => map.invalidateSize(), 100);
 setTimeout(() => map.invalidateSize(), 600);
+
+// Контур Республики Узбекистан — отдельным слоем поверх тайлов
+fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries/UZB.geo.json')
+    .then(r => r.json())
+    .then(geo => {
+        L.geoJSON(geo, {
+            style: {
+                color: '#c0392b',
+                weight: 2.5,
+                opacity: 0.9,
+                fillColor: '#c0392b',
+                fillOpacity: 0.04,
+                dashArray: null,
+            },
+            interactive: false,
+        }).addTo(map);
+    })
+    .catch(() => {});
 
 function colorForRisk(r) { return r >= 70 ? '#e74c3c' : r >= 30 ? '#e67e22' : '#27ae60'; }
 function radiusForN(n) { return Math.min(40, 8 + Math.sqrt(n) * 1.8); }
