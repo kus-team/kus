@@ -174,13 +174,20 @@ const COORDS = {
     'Almalyk':           [40.847, 69.598],
 };
 
-const map = L.map('map', { zoomControl: false, attributionControl: false, scrollWheelZoom: true })
-    .setView([41.0, 67.0], 6);
+const map = L.map('map', { zoomControl: false, attributionControl: false, scrollWheelZoom: true, preferCanvas: true })
+    .setView([41.0, 64.0], 6);
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+L.tileLayer(isLight
+    ? 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
     subdomains: 'abcd', maxZoom: 19,
 }).addTo(map);
+
+// Сразу после init контейнер может иметь неправильный размер — пересчёт
+setTimeout(() => map.invalidateSize(), 100);
+setTimeout(() => map.invalidateSize(), 600);
 
 function colorForRisk(r) { return r >= 70 ? '#e74c3c' : r >= 30 ? '#e67e22' : '#27ae60'; }
 function radiusForN(n) { return Math.min(40, 8 + Math.sqrt(n) * 1.8); }
@@ -197,6 +204,7 @@ function clsForRisk(r) { return r >= 70 ? 'red' : r >= 30 ? 'amber' : 'green'; }
     document.getElementById('kpiLots').textContent = totalN.toLocaleString('ru-RU');
     document.getElementById('kpiRed').textContent = totalRed;
 
+    const allCoords = [];
     list.forEach(item => {
         const key = item.scope === 'hq' ? item.hq : item.label;
         const xy = COORDS[key];
@@ -211,8 +219,9 @@ function clsForRisk(r) { return r >= 70 ? 'red' : r >= 30 ? 'amber' : 'green'; }
 
         const m = L.circleMarker(xy, {
             radius: radiusForN(item.n), fillColor: color, color,
-            weight: 2, opacity: 0.95, fillOpacity: 0.45,
+            weight: 2, opacity: 0.95, fillOpacity: 0.55,
         }).addTo(map);
+        allCoords.push(xy);
 
         m.bindPopup(`
             <div class="kus-popup">
@@ -224,6 +233,12 @@ function clsForRisk(r) { return r >= 70 ? 'red' : r >= 30 ? 'amber' : 'green'; }
                 <span class="kp-risk ${cls}">avg risk ${item.avg_risk}</span>
             </div>`);
     });
+
+    // Авто-fit карты под маркеры (с padding, чтобы поверх не сидели плавающие панели)
+    if (allCoords.length) {
+        const bounds = L.latLngBounds(allCoords);
+        map.fitBounds(bounds, { padding: [80, 80], maxZoom: 8, animate: false });
+    }
 
     const sortedDistricts = list.filter(x => x.scope === 'district').sort((a, b) => b.n - a.n);
     const colors = { red: '#e74c3c', amber: '#e67e22', green: '#27ae60' };
