@@ -79,6 +79,17 @@
 .action-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border); }
 .action-row .btn { font-size: 11px; padding: 6px 12px; }
 
+/* === Extra signals (доп. красные флаги) === */
+.extra-signals { background: rgba(18,25,41,0.82); backdrop-filter: blur(12px); border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 16px 20px; margin-top: 16px; }
+.es-h { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.es-h i { color: var(--accent-amber); }
+.es-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+.es-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; background: rgba(230,126,34,0.12); border: 1px solid rgba(230,126,34,0.35); border-radius: 16px; cursor: help; transition: all .15s; }
+.es-chip:hover { background: rgba(230,126,34,0.2); border-color: var(--accent-amber); transform: translateY(-1px); }
+.es-chip i { color: var(--accent-amber); font-size: 13px; }
+.es-chip .es-ttl { font-size: 12px; color: var(--text-primary); font-weight: 500; }
+.es-hint { color: var(--text-dim); font-size: 11px; margin-top: 12px; font-family: var(--font-mono); }
+
 /* === Inline compare ===*/
 .cmp-inline { background: rgba(18,25,41,0.82); backdrop-filter: blur(12px); border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 18px 20px; margin-top: 16px; }
 .cmp-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
@@ -264,6 +275,8 @@ function render(t) {
             </div>`).join('')}
       </div>
 
+      ${renderExtraSignals(flags)}
+
       <div class="meta-panel">
         <h3>Метаданные</h3>
         <div class="meta-grid">
@@ -307,6 +320,40 @@ function render(t) {
         const fg = document.querySelector('.score-ring .fg');
         if (fg) fg.setAttribute('stroke-dashoffset', String(offset));
     }, 100);
+}
+
+// Доп. сигналы (не влияют на score, но дают контекст для расследования)
+function renderExtraSignals(flags) {
+    const signals = [
+        { id: 'splitting',      icon: 'fa-divide',         title: 'Разбиение контракта',
+          why: 'У этой пары заказчик↔победитель есть ≥2 контракта в один день — может быть обход порога обязательного конкурса.' },
+        { id: 'one_off_winner', icon: 'fa-ghost',          title: 'Одноразовая фирма',
+          why: 'У победителя ровно 1 контракт за всю историю в наших данных — возможно фирма создана под одну сделку («прокладка»).' },
+        { id: 'concentration',  icon: 'fa-bullseye',       title: 'Концентрация заказчика',
+          why: `Этот победитель получил ${flags.concentration_pct ?? '?'}% объёма всех закупок этого заказчика.` },
+        { id: 'end_of_quarter', icon: 'fa-calendar-check', title: 'Конец квартала',
+          why: 'Контракт заключён в последние дни квартала — типичный паттерн «срочно потратить остаток бюджета».' },
+        { id: 'round_number',   icon: 'fa-equals',         title: 'Подозрительно круглая сумма',
+          why: 'Сумма ровная (без копеек, делится на крупный шаг) — не похоже на реальный расчёт цены.' },
+        { id: 'weekend',        icon: 'fa-couch',          title: 'Контракт в выходной',
+          why: 'Дата контракта — суббота или воскресенье. Бумажная формальность, реальные тендеры в выходные не проводят.' },
+        { id: 'dumping',        icon: 'fa-arrow-trend-down', title: 'Демпинг',
+          why: 'Цена в 5+ раз ниже средней по категории. Победитель мог сознательно занизить, чтобы попасть на госконтракт (с расчётом доп. соглашений).' },
+    ];
+    const fired = signals.filter(s => flags[s.id]);
+    if (!fired.length) return '';
+    return `
+        <div class="extra-signals">
+            <div class="es-h"><i class="fas fa-radar"></i> Дополнительные сигналы для расследования</div>
+            <div class="es-grid">
+                ${fired.map(s => `
+                    <div class="es-chip" title="${s.why}">
+                        <i class="fas ${s.icon}"></i>
+                        <span class="es-ttl">${s.title}</span>
+                    </div>`).join('')}
+            </div>
+            <div class="es-hint">Эти сигналы не меняют итоговый risk_score, но дают контекст для журналиста.</div>
+        </div>`;
 }
 
 // === Inline-сравнение ===
