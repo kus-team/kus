@@ -108,6 +108,18 @@
         function fmtUzs(n) { if (n == null) return '—'; n = Number(n); return n >= 1e9 ? (n/1e9).toFixed(2)+' млрд сум' : n >= 1e6 ? (n/1e6).toFixed(1)+' млн сум' : n >= 1e3 ? (n/1e3).toFixed(0)+' тыс сум' : n.toFixed(0)+' сум'; }
         function riskBadge(s) { if (s == null) return '<span class="badge">—</span>'; const c = s >= 70 ? 'badge-red' : s >= 30 ? 'badge-amber' : 'badge-green'; return `<span class="badge ${c}">${s}</span>`; }
 
+        // Текущая тема для графиков (Chart.js / vis.js)
+        function chartTheme() {
+            const cs = getComputedStyle(document.documentElement);
+            const dark = document.documentElement.getAttribute('data-theme') !== 'light';
+            return {
+                text: cs.getPropertyValue('--text-secondary').trim() || (dark ? '#94a3b8' : '#4a5568'),
+                grid: dark ? 'rgba(30,42,58,0.3)' : 'rgba(15,21,36,0.08)',
+                bg:   cs.getPropertyValue('--bg-darkest').trim() || (dark ? '#0a0e17' : '#f4f5f8'),
+                isDark: dark,
+            };
+        }
+
         // ===== THEME =====
         const THEME_KEY = 'kus.theme';
         function applyTheme(t) {

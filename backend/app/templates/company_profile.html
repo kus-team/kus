@@ -217,10 +217,10 @@ function flagPills(flags) {
             options: {
                 responsive: true, maintainAspectRatio: false,
                 scales: {
-                    x: { ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 9 } }, grid: { display: false }, stacked: true },
-                    y: { ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: 'rgba(30,42,58,0.3)' }, stacked: true, beginAtZero: true },
+                    x: { ticks: { color: chartTheme().text, font: { family: 'JetBrains Mono', size: 9 } }, grid: { display: false }, stacked: true },
+                    y: { ticks: { color: chartTheme().text, font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: chartTheme().grid }, stacked: true, beginAtZero: true },
                 },
-                plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 11 } } } },
+                plugins: { legend: { labels: { color: chartTheme().text, font: { family: 'JetBrains Mono', size: 11 } } } },
             },
         });
     }

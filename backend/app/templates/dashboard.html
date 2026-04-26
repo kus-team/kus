@@ -275,12 +275,12 @@ async function loadStats() {
             datasets: [{
                 data: [+s.red, +s.yellow, +s.green],
                 backgroundColor: ['#e74c3c','#e67e22','#27ae60'],
-                borderColor: '#0a0e17', borderWidth: 3, cutout: '72%',
+                borderColor: chartTheme().bg, borderWidth: 3, cutout: '72%',
             }],
         },
         options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { backgroundColor: '#121929', titleFont: { family: 'JetBrains Mono' } } },
+            plugins: { legend: { display: false }, tooltip: { backgroundColor: chartTheme().isDark ? '#121929' : '#1a2340', titleFont: { family: 'JetBrains Mono' } } },
             animation: { animateRotate: true, duration: 1200 },
         },
     });
@@ -304,11 +304,11 @@ async function loadCategories() {
         options: {
             responsive: true, maintainAspectRatio: false, indexAxis: 'y',
             scales: {
-                x: { ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: 'rgba(30,42,58,0.3)' } },
-                y: { ticks: { color: '#cbd5e1', font: { size: 11 } }, grid: { display: false } },
+                x: { ticks: { color: chartTheme().text, font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: chartTheme().grid } },
+                y: { ticks: { color: chartTheme().text, font: { size: 11 } }, grid: { display: false } },
                 y2: { display: false },
             },
-            plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 11 } } } },
+            plugins: { legend: { labels: { color: chartTheme().text, font: { family: 'JetBrains Mono', size: 11 } } } },
         },
     });
 }
@@ -371,10 +371,10 @@ async function loadTrends() {
         options: {
             responsive: true, maintainAspectRatio: false,
             scales: {
-                x: { ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: 'rgba(30,42,58,0.3)' } },
-                y: { ticks: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: 'rgba(30,42,58,0.3)' }, beginAtZero: true },
+                x: { ticks: { color: chartTheme().text, font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: chartTheme().grid } },
+                y: { ticks: { color: chartTheme().text, font: { family: 'JetBrains Mono', size: 10 } }, grid: { color: chartTheme().grid }, beginAtZero: true },
             },
-            plugins: { legend: { labels: { color: '#94a3b8', font: { family: 'JetBrains Mono', size: 11 } } } },
+            plugins: { legend: { labels: { color: chartTheme().text, font: { family: 'JetBrains Mono', size: 11 } } } },
         },
     });
 }
