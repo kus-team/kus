@@ -100,6 +100,11 @@ def page_cases(request: Request):
     return templates.TemplateResponse("cases.html", {"request": request})
 
 
+@app.get("/tenders/{tender_id}/report", response_class=HTMLResponse)
+def page_report(request: Request, tender_id: int):
+    return templates.TemplateResponse("report.html", {"request": request, "tender_id": tender_id})
+
+
 @app.get("/graph", response_class=HTMLResponse)
 def page_graph(request: Request):
     return templates.TemplateResponse("graph.html", {"request": request})

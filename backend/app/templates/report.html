@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>KUS · Отчёт по тендеру #{{ tender_id }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        @page { size: A4; margin: 18mm 16mm; }
+        :root {
+            --ink: #0f1524;       /* основной текст */
+            --dim: #4a5568;       /* приглушённый */
+            --line: #cbd5e1;
+            --red: #c0392b;
+            --amber: #b8651b;
+            --green: #1e8449;
+            --bg-soft: #f7f8fb;
+            --mono: 'JetBrains Mono', monospace;
+            --ui:   'Manrope', system-ui, sans-serif;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { background: white; color: var(--ink); font-family: var(--ui); font-size: 11pt; line-height: 1.45; }
+        body { padding: 24px; max-width: 820px; margin: 0 auto; }
+
+        /* ===== Header ===== */
+        .doc-h { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 14px; border-bottom: 2px solid var(--red); margin-bottom: 18px; }
+        .doc-h .brand { display: flex; align-items: center; gap: 12px; }
+        .doc-h .logo { width: 28px; height: 28px; border-radius: 50%; background: radial-gradient(circle, var(--red) 30%, #8b2d22 60%, transparent 70%); position: relative; }
+        .doc-h .logo::after { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 8px; height: 8px; background: white; border-radius: 50%; }
+        .doc-h .ttl  { font-family: var(--mono); font-size: 16pt; font-weight: 700; letter-spacing: 2px; }
+        .doc-h .sub  { font-size: 9pt; color: var(--dim); margin-top: 2px; letter-spacing: 1px; text-transform: uppercase; }
+        .doc-h .meta { text-align: right; font-family: var(--mono); font-size: 9pt; color: var(--dim); }
+
+        /* ===== Title ===== */
+        .doc-title { font-size: 18pt; font-weight: 700; margin: 14px 0 4px; }
+        .doc-id { font-family: var(--mono); font-size: 9pt; color: var(--dim); letter-spacing: 1px; text-transform: uppercase; }
+
+        /* ===== Big risk row ===== */
+        .risk-row { display: flex; align-items: center; gap: 24px; margin: 22px 0; padding: 18px 22px; border: 2px solid var(--line); border-radius: 8px; background: var(--bg-soft); page-break-inside: avoid; }
+        .risk-row.r-red    { border-color: var(--red);   background: #fef2f1; }
+        .risk-row.r-amber  { border-color: var(--amber); background: #fef6ee; }
+        .risk-row.r-green  { border-color: var(--green); background: #eef9f1; }
+        .risk-circle { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 28pt; font-weight: 700; flex-shrink: 0; background: white; border: 4px solid; }
+        .risk-row.r-red   .risk-circle { color: var(--red); border-color: var(--red); }
+        .risk-row.r-amber .risk-circle { color: var(--amber); border-color: var(--amber); }
+        .risk-row.r-green .risk-circle { color: var(--green); border-color: var(--green); }
+        .risk-info .zone { font-family: var(--mono); font-size: 9pt; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
+        .risk-row.r-red   .zone { color: var(--red); }
+        .risk-row.r-amber .zone { color: var(--amber); }
+        .risk-row.r-green .zone { color: var(--green); }
+        .risk-info .verdict { font-size: 12pt; margin-top: 4px; }
+
+        /* ===== Sections ===== */
+        h2 { font-family: var(--mono); font-size: 9pt; text-transform: uppercase; letter-spacing: 2px; color: var(--dim); margin: 22px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--line); page-break-after: avoid; }
+
+        /* ===== Meta grid ===== */
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 24px; }
+        .grid .row { padding: 8px 0; border-bottom: 1px dotted var(--line); }
+        .grid .k { font-family: var(--mono); font-size: 8.5pt; color: var(--dim); text-transform: uppercase; letter-spacing: 0.8px; }
+        .grid .v { font-size: 11pt; margin-top: 2px; word-break: break-word; }
+
+        /* ===== Flag list ===== */
+        .flag-list { display: flex; flex-direction: column; gap: 8px; }
+        .flag { display: grid; grid-template-columns: 28px 1fr 50px; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 6px; align-items: center; page-break-inside: avoid; }
+        .flag.fired { background: #fef2f1; border-color: var(--red); }
+        .flag .ic   { font-weight: 700; font-family: var(--mono); text-align: center; color: var(--dim); font-size: 12pt; }
+        .flag.fired .ic { color: var(--red); }
+        .flag .ttl  { font-weight: 600; }
+        .flag .why  { font-size: 9.5pt; color: var(--dim); margin-top: 2px; line-height: 1.5; }
+        .flag .pts  { font-family: var(--mono); font-size: 10pt; text-align: right; color: var(--dim); }
+        .flag.fired .pts { color: var(--red); font-weight: 700; }
+
+        /* ===== AI narrative box ===== */
+        .ai-box { padding: 14px 18px; background: var(--bg-soft); border-left: 3px solid var(--red); border-radius: 4px; margin-top: 10px; font-size: 10.5pt; line-height: 1.65; white-space: pre-wrap; page-break-inside: avoid; }
+        .ai-box.empty { color: var(--dim); font-style: italic; }
+
+        /* ===== Footer ===== */
+        .doc-f { margin-top: 36px; padding-top: 14px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-family: var(--mono); font-size: 8.5pt; color: var(--dim); }
+        .doc-f .qr { width: 90px; height: 90px; border: 1px solid var(--line); padding: 4px; background: white; }
+        .doc-f .src { max-width: 460px; line-height: 1.5; }
+        .doc-f .src b { color: var(--ink); }
+
+        /* ===== No-print toolbar ===== */
+        .toolbar { position: fixed; top: 14px; right: 14px; display: flex; gap: 8px; z-index: 1000; }
+        .toolbar button, .toolbar a {
+            padding: 8px 16px; border: 1px solid var(--line); background: white; color: var(--ink);
+            text-decoration: none; border-radius: 6px; font-family: var(--ui); font-size: 11pt; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(15,21,36,0.12);
+        }
+        .toolbar button:hover, .toolbar a:hover { border-color: var(--red); color: var(--red); }
+
+        @media print {
+            .toolbar { display: none !important; }
+            body { padding: 0; }
+            .ai-box { background: white; border-left-color: #999; }
+        }
+
+        .empty { color: var(--dim); font-style: italic; }
+    </style>
+</head>
+<body data-tid="{{ tender_id }}">
+
+<div class="toolbar no-print">
+    <button onclick="window.print()">📄 Скачать PDF / Печать</button>
+    <a href="/tenders/{{ tender_id }}">← Вернуться</a>
+</div>
+
+<div class="doc-h">
+    <div class="brand">
+        <div class="logo"></div>
+        <div>
+            <div class="ttl">KUS</div>
+            <div class="sub">Kill Unlawful Schemes</div>
+        </div>
+    </div>
+    <div class="meta">
+        Отчёт от <span id="docDate">—</span><br>
+        ID #{{ tender_id }}
+    </div>
+</div>
+
+<div class="doc-id" id="docLot">Лот —</div>
+<div class="doc-title" id="docTitle">Загрузка…</div>
+
+<div id="riskBlock"></div>
+
+<h2>Метаданные тендера</h2>
+<div class="grid" id="metaGrid"></div>
+
+<h2>Красные флаги анти-коррупционного индекса</h2>
+<div class="flag-list" id="flagsList"></div>
+
+<h2>Дополнительные сигналы для расследования</h2>
+<div id="extraList"></div>
+
+<h2>🤖 Объяснение AI-аналитика</h2>
+<div class="ai-box empty" id="aiBox">Не сгенерировано. Откройте /tenders/{{ tender_id }} → «Объяснить простым языком».</div>
+
+<div class="doc-f">
+    <div class="src">
+        <b>Источник:</b> data.egov.uz · открытые данные госзакупок Республики Узбекистан.<br>
+        <b>Платформа:</b> KUS — github.com/kus-team/kus<br>
+        <b>Документ:</b> автоматически сгенерирован, факты не редактировались.
+    </div>
+    <img class="qr" id="qrImg" alt="QR">
+</div>
+
+<script>
+async function api(url) { const r = await fetch(url); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); }
+function fmtUsd(n) { if (n == null) return '—'; n = Number(n); return n >= 1e6 ? '$'+(n/1e6).toFixed(2)+'M' : n >= 1e3 ? '$'+(n/1e3).toFixed(1)+'k' : '$'+n.toFixed(0); }
+function fmtUzs(n) { if (n == null) return '—'; n = Number(n); return n >= 1e9 ? (n/1e9).toFixed(2)+' млрд сум' : n >= 1e6 ? (n/1e6).toFixed(1)+' млн сум' : n >= 1e3 ? (n/1e3).toFixed(0)+' тыс сум' : n.toFixed(0)+' сум'; }
+
+const TID = document.body.dataset.tid;
+document.getElementById('docDate').textContent = new Date().toLocaleString('ru-RU', { dateStyle: 'long', timeStyle: 'short' });
+
+(async () => {
+    let t;
+    try { t = await api('/api/tenders/' + TID); }
+    catch (e) { document.getElementById('docTitle').textContent = 'Тендер #' + TID + ' не найден'; return; }
+
+    document.getElementById('docTitle').textContent = t.title || 'Без названия';
+    document.getElementById('docLot').textContent = `Лот № ${t.lot_id || '—'} · Контракт ${t.contract_id || '—'} · ${t.date || '—'}`;
+
+    // Risk block
+    const flags = t.risk_flags || {};
+    const score = t.risk_score ?? 0;
+    const cls = score >= 70 ? 'r-red' : score >= 30 ? 'r-amber' : 'r-green';
+    const zoneTxt = score >= 70 ? 'ВЫСОКИЙ РИСК КОРРУПЦИИ' : score >= 30 ? 'СРЕДНИЙ' : 'НИЗКИЙ';
+    const verdict = score >= 70 ? 'Сработало 2+ ключевых флага. Контракт требует ручной проверки.' :
+                    score >= 30 ? 'Сработал 1 флаг. Подозрительно, но не критично.' :
+                                  'Аномалий не обнаружено по 3 ключевым флагам.';
+    document.getElementById('riskBlock').innerHTML = `
+        <div class="risk-row ${cls}">
+            <div class="risk-circle">${score}</div>
+            <div class="risk-info">
+                <div class="zone">${zoneTxt}</div>
+                <div class="verdict">${verdict}</div>
+            </div>
+        </div>`;
+
+    // Meta
+    const m = [
+        ['Заказчик ИНН', t.customer_tin],
+        ['Заказчик имя', t.customer_name],
+        ['Победитель ИНН', t.winner_tin],
+        ['Победитель имя', t.winner_name],
+        ['Сумма UZS', fmtUzs(t.amount_uzs)],
+        ['Сумма USD', fmtUsd(t.amount_usd)],
+        ['Дата контракта', t.date],
+        ['Категория', t.category],
+        ['Способ закупки', t.purchase_method],
+        ['Источник финансирования', t.funding_source],
+        ['Источник датасета', t.source_dataset],
+        ['Прямая закупка', t.is_direct_purchase ? 'да' : 'нет'],
+    ];
+    document.getElementById('metaGrid').innerHTML = m.map(([k,v]) =>
+        `<div class="row"><div class="k">${k}</div><div class="v">${v == null || v === '' ? '<span class="empty">—</span>' : v}</div></div>`
+    ).join('');
+
+    // Flags
+    const flagDefs = [
+        { id: 'monopoly',   ic: 'М', t: 'Монополизация (свой победитель)', pts: '+30', why: flags.monopoly ? `Этот победитель выиграл у этого заказчика ${flags.pair_wins} раз.` : `Пара заказчик–победитель встречалась ${flags.pair_wins ?? 1} раз.` },
+        { id: 'no_compete', ic: 'К', t: 'Прямая закупка без конкурса',     pts: '+30', why: flags.no_compete ? 'Контракт оформлен как прямая закупка (Togridantogri / Прямые договора).' : 'Закупка прошла стандартную процедуру.' },
+        { id: 'overpriced', ic: 'Ц', t: 'Цена выше средней по категории',  pts: '+40', why: flags.overpriced ? `Сумма на 30%+ выше средней (avg ≈ ${flags.category_avg ? Math.round(flags.category_avg).toLocaleString('ru-RU') : '?'} сум).` : 'Цена в пределах нормы по категории.' },
+    ];
+    document.getElementById('flagsList').innerHTML = flagDefs.map(f => `
+        <div class="flag ${flags[f.id] ? 'fired' : ''}">
+            <div class="ic">${f.ic}</div>
+            <div><div class="ttl">${flags[f.id] ? '🚨 ' : ''}${f.t}</div><div class="why">${f.why}</div></div>
+            <div class="pts">${f.pts}</div>
+        </div>`).join('');
+
+    // Extra
+    const extras = [
+        ['splitting', 'Разбиение контракта (≥2 в один день одной паре)'],
+        ['one_off_winner', 'Одноразовая фирма (1 контракт за всю историю)'],
+        ['concentration', `Концентрация заказчика (${flags.concentration_pct ?? '?'}% объёма)`],
+        ['end_of_quarter', 'Конец квартала (срочно потратить бюджет)'],
+        ['round_number', 'Подозрительно круглая сумма'],
+        ['weekend', 'Контракт оформлен в выходной'],
+        ['dumping', 'Демпинг (цена в 5+ раз ниже средней)'],
+    ];
+    const fired = extras.filter(([k]) => flags[k]);
+    document.getElementById('extraList').innerHTML = fired.length
+        ? '<ul style="margin:0;padding-left:22px">' + fired.map(([_,t]) => `<li style="margin:4px 0">${t}</li>`).join('') + '</ul>'
+        : '<div class="empty">Дополнительных сигналов нет.</div>';
+
+    // AI narrative
+    if (t.ai_narrative) {
+        document.getElementById('aiBox').className = 'ai-box';
+        document.getElementById('aiBox').textContent = t.ai_narrative;
+    }
+
+    // QR (через API qrserver — не требует библиотеки)
+    const url = location.origin + '/tenders/' + TID;
+    document.getElementById('qrImg').src = `https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(url)}&size=180x180&color=0f1524&bgcolor=ffffff`;
+})();
+</script>
+</body>
+</html>

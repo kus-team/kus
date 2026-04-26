@@ -259,6 +259,7 @@ function render(t) {
                 <button class="btn btn-secondary btn-sm" onclick="shareTender(${t.id}, ${JSON.stringify((t.title||'').replace(/"/g,'\\"'))})"><i class="fas fa-share-nodes"></i> Поделиться</button>
                 <a class="btn btn-secondary btn-sm" href="/complaint/${t.id}"><i class="fas fa-flag"></i> Сообщить о подозрении</a>
                 <button class="btn btn-secondary btn-sm" onclick="toggleCompare(${t.id})"><i class="fas fa-code-compare"></i> Сравнить с другим</button>
+                <a class="btn btn-secondary btn-sm" href="/tenders/${t.id}/report" target="_blank"><i class="fas fa-file-pdf"></i> PDF отчёт</a>
             </div>
         </div>
       </div>
