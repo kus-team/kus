@@ -79,6 +79,35 @@
 .action-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--border); }
 .action-row .btn { font-size: 11px; padding: 6px 12px; }
 
+/* === Inline compare ===*/
+.cmp-inline { background: rgba(18,25,41,0.82); backdrop-filter: blur(12px); border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 18px 20px; margin-top: 16px; }
+.cmp-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.cmp-h h3 { font-family: var(--font-mono); font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
+.cmp-h h3 i { color: var(--accent-red-dim); }
+.cmp-x { background: transparent; border: none; color: var(--text-dim); cursor: pointer; padding: 4px 8px; }
+.cmp-x:hover { color: var(--text-primary); }
+.cmp-search { display: flex; gap: 8px; margin-bottom: 14px; }
+.cmp-search input { flex: 1; background: var(--bg-input); border: 1px solid var(--border); color: var(--text-primary); padding: 10px 14px; border-radius: var(--radius); font-family: var(--font-mono); font-size: 13px; }
+.cmp-search input:focus { outline: none; border-color: var(--accent-red); }
+.cmp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+@media (max-width: 720px) { .cmp-grid { grid-template-columns: 1fr; } }
+.cmp-col { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+.cmp-col-head { display: flex; justify-content: space-between; align-items: center; }
+.cmp-col-link { font-family: var(--font-mono); font-size: 11px; color: var(--accent-cyan); text-decoration: none; }
+.cmp-col-link:hover { color: var(--text-primary); }
+.cmp-col-title { font-size: 12px; color: var(--text-primary); margin-top: 8px; line-height: 1.5; }
+.cmp-table { display: flex; flex-direction: column; gap: 2px; }
+.cmp-row { display: grid; grid-template-columns: 160px 1fr 1fr; gap: 12px; align-items: center; padding: 8px 12px; border-radius: var(--radius); font-family: var(--font-mono); font-size: 12px; }
+.cmp-row .cmp-key { color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; font-size: 10px; }
+.cmp-row .cmp-v { color: var(--text-secondary); word-break: break-word; }
+.cmp-row.cmp-diff { background: rgba(230,126,34,0.1); border-left: 3px solid var(--accent-amber); }
+.cmp-row.cmp-diff .cmp-v { color: var(--text-primary); font-weight: 600; }
+.cmp-hint { color: var(--text-dim); font-size: 11px; padding: 12px 0 0; text-align: center; font-family: var(--font-mono); }
+@media (max-width: 720px) {
+    .cmp-row { grid-template-columns: 1fr; gap: 4px; }
+    .cmp-row .cmp-v { padding-left: 12px; border-left: 2px solid var(--border); }
+}
+
 /* ===== Flag cards ===== */
 .flags-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-bottom: 16px; }
 .flag-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px; position: relative; overflow: hidden; transition: all .25s; }
@@ -218,7 +247,7 @@ function render(t) {
                 ${bookmarkButton(t.id, t.title, t.risk_score)}
                 <button class="btn btn-secondary btn-sm" onclick="shareTender(${t.id}, ${JSON.stringify((t.title||'').replace(/"/g,'\\"'))})"><i class="fas fa-share-nodes"></i> Поделиться</button>
                 <a class="btn btn-secondary btn-sm" href="/complaint/${t.id}"><i class="fas fa-flag"></i> Сообщить о подозрении</a>
-                <a class="btn btn-secondary btn-sm" href="/compare?a=${t.id}"><i class="fas fa-code-compare"></i> Сравнить</a>
+                <button class="btn btn-secondary btn-sm" onclick="toggleCompare(${t.id})"><i class="fas fa-code-compare"></i> Сравнить с другим</button>
             </div>
         </div>
       </div>
@@ -246,6 +275,19 @@ function render(t) {
         ${priceCmp}
       </div>
 
+      <!-- Inline-блок сравнения (скрыт по умолчанию) -->
+      <div class="cmp-inline" id="cmpInline" style="display:none">
+        <div class="cmp-h">
+            <h3><i class="fas fa-code-compare"></i> Сравнить с другим тендером</h3>
+            <button class="cmp-x" onclick="toggleCompare(${t.id})" aria-label="Закрыть"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="cmp-search">
+            <input type="text" id="cmpInput" placeholder="ID второго тендера или № лота…">
+            <button class="btn btn-primary btn-sm" onclick="runCompare(${t.id})"><i class="fas fa-bolt"></i> Сравнить</button>
+        </div>
+        <div id="cmpResult"></div>
+      </div>
+
       <div class="ai-panel">
         <div class="ai-header">
             <div class="ai-indicator"></div>
@@ -265,6 +307,99 @@ function render(t) {
         const fg = document.querySelector('.score-ring .fg');
         if (fg) fg.setAttribute('stroke-dashoffset', String(offset));
     }, 100);
+}
+
+// === Inline-сравнение ===
+function toggleCompare(currentId) {
+    const el = document.getElementById('cmpInline');
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    if (el.style.display === 'block') {
+        document.getElementById('cmpInput').focus();
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+}
+
+async function runCompare(currentId) {
+    const q = document.getElementById('cmpInput').value.trim();
+    if (!q) return;
+    const out = document.getElementById('cmpResult');
+    out.innerHTML = '<div style="color:var(--text-dim); padding:14px; text-align:center"><i class="fas fa-spinner fa-spin"></i> Ищу второй тендер…</div>';
+    try {
+        // 1) Найти второй тендер по ID или поиску
+        let other;
+        if (/^\d+$/.test(q)) {
+            try { other = await api('/api/tenders/' + q); } catch {}
+        }
+        if (!other) {
+            const r = await api('/api/tenders?q=' + encodeURIComponent(q) + '&limit=1');
+            other = (r.data || [])[0];
+        }
+        if (!other) {
+            out.innerHTML = '<div style="color:var(--accent-amber); padding:14px; text-align:center">Второй тендер не найден по «' + q + '»</div>';
+            return;
+        }
+        if (other.id === currentId) {
+            out.innerHTML = '<div style="color:var(--accent-amber); padding:14px; text-align:center">Это тот же тендер. Введи другой ID.</div>';
+            return;
+        }
+        // 2) Получить пару через /api/compare для unified формата
+        const pair = await api(`/api/compare?a=${currentId}&b=${other.id}`);
+        renderCompareResult(pair.a, pair.b);
+    } catch (e) {
+        out.innerHTML = '<div style="color:var(--accent-red); padding:14px">Ошибка: ' + e.message + '</div>';
+    }
+}
+
+function renderCompareResult(a, b) {
+    const fields = [
+        ['ID', 'id'],
+        ['Risk score', 'risk_score'],
+        ['Дата', 'date'],
+        ['Заказчик ИНН', 'customer_tin'],
+        ['Победитель ИНН', 'winner_tin'],
+        ['Победитель', 'winner_name'],
+        ['Сумма UZS', 'amount_uzs'],
+        ['Сумма USD', 'amount_usd'],
+        ['Категория', 'category'],
+        ['Прямая закупка', 'is_direct_purchase'],
+    ];
+    function fmt(k, v) {
+        if (v == null || v === '') return '—';
+        if (k === 'amount_uzs') return fmtUzs(v);
+        if (k === 'amount_usd') return fmtUsd(v);
+        if (k === 'is_direct_purchase') return v ? 'да' : 'нет';
+        return String(v);
+    }
+    function rhead(t) {
+        const cls = t.risk_score >= 70 ? 'red' : t.risk_score >= 30 ? 'amber' : 'green';
+        return `
+            <div class="cmp-col-head">
+                <span class="badge badge-${cls}" style="font-size:14px;padding:4px 12px">${t.risk_score ?? 0}</span>
+                <a href="/tenders/${t.id}" class="cmp-col-link">→ полный профиль</a>
+            </div>
+            <div class="cmp-col-title" title="${t.title || ''}">${(t.title || '').slice(0, 80)}${(t.title || '').length > 80 ? '…' : ''}</div>
+        `;
+    }
+    let rows = '';
+    fields.forEach(([label, key]) => {
+        const va = fmt(key, a[key]);
+        const vb = fmt(key, b[key]);
+        const diff = va !== vb;
+        rows += `
+            <div class="cmp-row ${diff ? 'cmp-diff' : ''}">
+                <div class="cmp-key">${label}</div>
+                <div class="cmp-v">${va}</div>
+                <div class="cmp-v">${vb}</div>
+            </div>`;
+    });
+    document.getElementById('cmpResult').innerHTML = `
+        <div class="cmp-grid">
+            <div class="cmp-col">${rhead(a)}</div>
+            <div class="cmp-col">${rhead(b)}</div>
+        </div>
+        <div class="cmp-table">${rows}</div>
+        <div class="cmp-hint">Подсвечены строки где значения <b>отличаются</b>. Для полного профиля → клик на ссылку выше.</div>
+    `;
 }
 
 async function explain(tenderId, force=false) {
