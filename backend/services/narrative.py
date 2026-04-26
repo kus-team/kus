@@ -13,7 +13,7 @@ import anthropic
 
 from backend.config import settings
 
-MODEL = "claude-sonnet-4-5"   # актуальный alias на момент аудита
+MODEL = "claude-sonnet-4-6"   # Sonnet 4.6 — актуальная модель Anthropic (cutoff Jan 2026)
 MAX_TOKENS = 600
 REQUEST_TIMEOUT = 25          # короче чем Railway gateway 30s
 
