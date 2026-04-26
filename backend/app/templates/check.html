@@ -90,6 +90,17 @@
 .es-chip .es-ttl { font-size: 12px; color: var(--text-primary); font-weight: 500; }
 .es-hint { color: var(--text-dim); font-size: 11px; margin-top: 12px; font-family: var(--font-mono); }
 
+/* === Похожие тендеры === */
+.similar-panel { background: rgba(18,25,41,0.82); backdrop-filter: blur(12px); border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 18px 20px; margin-top: 16px; }
+.similar-panel h3 { font-family: var(--font-mono); font-size: 12px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-secondary); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+.similar-panel h3 i { color: var(--accent-cyan); }
+.sim-list { display: flex; flex-direction: column; gap: 6px; }
+.sim-item { display: grid; grid-template-columns: 50px 1fr auto; gap: 12px; align-items: center; padding: 10px 14px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: var(--radius); text-decoration: none; color: var(--text-primary); transition: all .15s; font-size: 13px; }
+.sim-item:hover { border-color: var(--accent-cyan); transform: translateX(2px); }
+.sim-title { color: var(--text-primary); }
+.sim-meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); }
+.sim-hint { color: var(--text-dim); font-size: 11px; margin-top: 12px; font-family: var(--font-mono); }
+
 /* === Inline compare ===*/
 .cmp-inline { background: rgba(18,25,41,0.82); backdrop-filter: blur(12px); border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 18px 20px; margin-top: 16px; }
 .cmp-h { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
@@ -278,6 +289,8 @@ function render(t) {
 
       ${renderExtraSignals(flags)}
 
+      <div id="similarBlock"></div>
+
       <div class="meta-panel">
         <h3>Метаданные</h3>
         <div class="meta-grid">
@@ -321,6 +334,33 @@ function render(t) {
         const fg = document.querySelector('.score-ring .fg');
         if (fg) fg.setAttribute('stroke-dashoffset', String(offset));
     }, 100);
+    // Похожие тендеры
+    setTimeout(() => loadSimilar(t.id), 200);
+}
+
+async function loadSimilar(tenderId) {
+    try {
+        const r = await api(`/api/tenders/${tenderId}/similar?limit=5`);
+        const list = r.data || [];
+        const root = document.getElementById('similarBlock');
+        if (!root || !list.length) return;
+        root.innerHTML = `
+            <div class="similar-panel">
+                <h3><i class="fas fa-clone"></i> Похожие тендеры (по названию)</h3>
+                <div class="sim-list">
+                    ${list.map(s => {
+                        const cls = s.risk_score >= 70 ? 'red' : s.risk_score >= 30 ? 'amber' : 'green';
+                        return `
+                        <a class="sim-item" href="/tenders/${s.id}">
+                            <span class="badge badge-${cls}" style="font-size:11px;padding:3px 8px">${s.risk_score ?? 0}</span>
+                            <span class="sim-title">${(s.title || '').slice(0, 90)}${(s.title || '').length > 90 ? '…' : ''}</span>
+                            <span class="sim-meta">${fmtUsd(s.amount_usd)} · ${s.date || '—'}</span>
+                        </a>`;
+                    }).join('')}
+                </div>
+                <div class="sim-hint">Эти тендеры могут быть кандидатами на «расщепление» (splitting) или дублирование одной задачи.</div>
+            </div>`;
+    } catch {}
 }
 
 // Доп. сигналы (не влияют на score, но дают контекст для расследования)

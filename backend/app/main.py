@@ -462,6 +462,92 @@ def compare_tenders(a: int = Query(...), b: int = Query(...)) -> dict[str, Any]:
 
 # ------------------------------------------------------------------ CSV export
 
+@app.get("/api/tenders/{tender_id}/similar")
+def similar_tenders(tender_id: int, limit: int = Query(5, ge=1, le=20)) -> dict[str, Any]:
+    """Похожие тендеры по title (pg_trgm similarity на Postgres, fallback LIKE на SQLite)."""
+    base = fetch_one("SELECT title FROM tenders WHERE id = %s", (tender_id,))
+    if not base or not base.get("title"):
+        return {"data": []}
+    title = base["title"]
+    # На Postgres используем pg_trgm. На SQLite — простой LIKE по первым словам.
+    from backend.db.connection import dialect
+    if dialect() == "postgres":
+        rows = fetch_all("""
+            SELECT id, title, customer_name, winner_name, amount_uzs, amount_usd, date,
+                   risk_score, similarity(title, %(t)s) AS sim
+            FROM tenders
+            WHERE id <> %(id)s AND title IS NOT NULL
+              AND similarity(title, %(t)s) > 0.4
+            ORDER BY sim DESC
+            LIMIT %(lim)s
+        """, {"t": title, "id": tender_id, "lim": limit})
+    else:
+        words = [w for w in title.split()[:3] if len(w) > 3]
+        if not words:
+            return {"data": []}
+        like = "%" + "%".join(words) + "%"
+        rows = fetch_all("""
+            SELECT id, title, customer_name, winner_name, amount_uzs, amount_usd, date, risk_score
+            FROM tenders
+            WHERE id <> %(id)s AND title LIKE %(like)s
+            LIMIT %(lim)s
+        """, {"like": like, "id": tender_id, "lim": limit})
+    return {"data": rows}
+
+
+@app.get("/api/analytics/ministries")
+def ministries_rating(limit: int = Query(15, ge=3, le=50)) -> dict[str, Any]:
+    """Рейтинг госорганов: для каждого заказчика — кол-во контрактов, % красных, объём."""
+    return {"data": fetch_all("""
+        SELECT t.customer_tin,
+               COALESCE(MAX(t.customer_name), MAX(od.name)) AS name,
+               COUNT(*)                                     AS total,
+               SUM(CASE WHEN t.risk_score >= %(red)s THEN 1 ELSE 0 END) AS red,
+               SUM(CASE WHEN t.is_direct_purchase THEN 1 ELSE 0 END) AS direct,
+               COALESCE(SUM(t.amount_uzs), 0)               AS total_uzs,
+               COALESCE(SUM(t.amount_usd), 0)               AS total_usd,
+               ROUND(AVG(t.risk_score), 1)                  AS avg_risk,
+               ROUND(100.0 * SUM(CASE WHEN t.risk_score >= %(red)s THEN 1 ELSE 0 END) / COUNT(*), 1) AS red_pct
+        FROM tenders t
+        LEFT JOIN org_directory od ON od.tin = t.customer_tin
+        WHERE t.customer_tin IS NOT NULL
+        GROUP BY t.customer_tin
+        HAVING COUNT(*) >= 3
+        ORDER BY red_pct DESC, red DESC, total DESC
+        LIMIT %(lim)s
+    """, {"red": RISK_RED, "lim": limit})}
+
+
+@app.get("/api/analytics/tender-of-week")
+def tender_of_week() -> dict[str, Any]:
+    """Самый подозрительный тендер за последние 7 дней (по risk_score, при равенстве — большая сумма).
+    Если за неделю нет данных — берём за всё время (наша БД не растёт в реальном времени)."""
+    row = fetch_one("""
+        SELECT id, title, customer_tin, customer_name, winner_tin, winner_name,
+               amount_uzs, amount_usd, date, category, risk_score, risk_flags
+        FROM tenders
+        WHERE date >= CURRENT_DATE - 7 AND risk_score IS NOT NULL
+        ORDER BY risk_score DESC, amount_uzs DESC NULLS LAST
+        LIMIT 1
+    """) if dialect_is_pg() else None
+    if not row:
+        # SQLite или нет за неделю — fallback на самый красный за всё время
+        row = fetch_one("""
+            SELECT id, title, customer_tin, customer_name, winner_tin, winner_name,
+                   amount_uzs, amount_usd, date, category, risk_score, risk_flags
+            FROM tenders
+            WHERE risk_score IS NOT NULL
+            ORDER BY risk_score DESC, amount_uzs DESC
+            LIMIT 1
+        """)
+    return {"tender": row}
+
+
+def dialect_is_pg() -> bool:
+    from backend.db.connection import dialect
+    return dialect() == "postgres"
+
+
 @app.get("/api/cases")
 def api_cases(limit: int = Query(50, ge=1, le=200)) -> dict[str, Any]:
     """Топ-кейсов: пары (заказчик, победитель) с >= 3 победами + большим объёмом, отсортированные по подозрительности."""

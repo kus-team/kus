@@ -118,6 +118,17 @@
     </div>
 </div>
 
+<div class="panel" style="max-width:1400px;margin:0 auto 16px;padding:20px 24px;">
+    <div class="panel-h">
+        <h2><i class="fas fa-landmark"></i> Рейтинг госорганов по доле красных тендеров</h2>
+        <a href="/cases" class="btn btn-ghost btn-sm">Кейсы →</a>
+    </div>
+    <table class="data-table" id="ministries">
+        <thead><tr><th>ИНН / название</th><th class="num">Тендеров</th><th class="num">Прямых</th><th class="num">% красных</th><th class="num">Сумма USD</th></tr></thead>
+        <tbody><tr><td colspan="5" style="text-align:center;color:var(--text-dim)">Загрузка…</td></tr></tbody>
+    </table>
+</div>
+
 <div class="panel companies-panel">
     <div class="panel-h">
         <h2><i class="fas fa-fire"></i> Топ подозрительных победителей</h2>
@@ -233,6 +244,22 @@
 .hm-legend { display: flex; gap: 16px; padding-top: 12px; border-top: 1px solid var(--border); margin-top: 12px; flex-wrap: wrap; }
 .hm-leg-item { display: flex; align-items: center; gap: 6px; font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
 .hm-leg-cell { width: 18px; height: 12px; border-radius: 2px; }
+
+/* === Tender of week ===*/
+.tow-card { display: block; text-decoration: none; color: inherit; padding: 18px 22px; border: 1px solid var(--border-light); border-radius: var(--radius-lg); background: rgba(18,25,41,0.85); backdrop-filter: blur(12px); transition: all .25s; }
+.tow-card.tow-red   { border-color: rgba(231,76,60,0.5); box-shadow: 0 0 30px rgba(231,76,60,0.18); }
+.tow-card.tow-amber { border-color: rgba(230,126,34,0.5); }
+.tow-card:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(231,76,60,0.25); }
+.tow-tag { font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; color: #ff6f61; text-transform: uppercase; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.tow-row { display: grid; grid-template-columns: 70px 1fr auto; gap: 18px; align-items: center; }
+.tow-score { font-family: var(--font-mono); font-size: 32px; font-weight: 700; color: #ff6f61; text-align: center; padding: 10px 14px; background: rgba(231,76,60,0.12); border-radius: 8px; }
+.tow-card.tow-amber .tow-score { color: var(--accent-amber); background: rgba(230,126,34,0.12); }
+.tow-card.tow-green .tow-score { color: var(--success); background: rgba(39,174,96,0.12); }
+.tow-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
+.tow-meta { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
+.tow-meta b { color: var(--text-primary); }
+.tow-cta { font-family: var(--font-mono); font-size: 12px; color: var(--accent-cyan); white-space: nowrap; }
+@media (max-width: 700px) { .tow-row { grid-template-columns: 70px 1fr; } .tow-cta { grid-column: 1 / -1; text-align: right; } }
 </style>
 {% endblock %}
 
@@ -414,12 +441,50 @@ async function loadHeatmap() {
     root.innerHTML = html;
 }
 
+async function loadTOW() {
+    try {
+        const r = await api('/api/analytics/tender-of-week');
+        const t = r.tender;
+        if (!t) return;
+        const cls = t.risk_score >= 70 ? 'red' : t.risk_score >= 30 ? 'amber' : 'green';
+        document.getElementById('towWidget').innerHTML = `
+            <a class="tow-card tow-${cls}" href="/tenders/${t.id}">
+                <div class="tow-tag"><span class="hero-dot"></span> ⚠️ ТЕНДЕР НЕДЕЛИ</div>
+                <div class="tow-row">
+                    <div class="tow-score">${t.risk_score}</div>
+                    <div class="tow-info">
+                        <div class="tow-title">${(t.title || '').slice(0, 100)}${(t.title || '').length > 100 ? '…' : ''}</div>
+                        <div class="tow-meta"><b>${fmtUsd(t.amount_usd)}</b> · ${t.date || '—'} · ${t.customer_name || 'ИНН ' + (t.customer_tin || '?')}</div>
+                    </div>
+                    <div class="tow-cta">Расследовать →</div>
+                </div>
+            </a>`;
+    } catch {}
+}
+
+async function loadMinistries() {
+    try {
+        const r = await api('/api/analytics/ministries?limit=15');
+        const tbody = document.querySelector('#ministries tbody');
+        tbody.innerHTML = (r.data || []).map(m => `
+            <tr onclick="window.location.href='/tenders?customer_tin=${encodeURIComponent(m.customer_tin)}'" style="cursor:pointer">
+                <td><code>${m.customer_tin}</code><br><span style="color:var(--text-secondary);font-size:11px">${m.name || '—'}</span></td>
+                <td class="num">${m.total}</td>
+                <td class="num">${m.direct}</td>
+                <td class="num"><b style="color:#ff6f61">${m.red_pct}%</b> <span style="color:var(--text-dim);font-size:11px">(${m.red})</span></td>
+                <td class="num">${fmtUsd(m.total_usd)}</td>
+            </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:var(--text-dim)">Нет данных</td></tr>';
+    } catch {}
+}
+
 (async () => {
+    try { await loadTOW(); } catch (e) { console.error(e); }
     try { await loadStats(); } catch (e) { console.error(e); }
     try { await loadCategories(); } catch (e) { console.error(e); }
     try { await loadFeed(); } catch (e) { console.error(e); }
     try { await loadTrends(); } catch (e) { console.error(e); }
     try { await loadHeatmap(); } catch (e) { console.error(e); }
+    try { await loadMinistries(); } catch (e) { console.error(e); }
     try { await loadCompanies(); } catch (e) { console.error(e); }
 })();
 </script>
