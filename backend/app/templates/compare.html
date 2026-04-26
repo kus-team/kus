@@ -39,7 +39,7 @@
 .page-header .subtitle { color: var(--text-secondary); font-size: 13px; margin-top: 4px; }
 
 .cmp-inputs { display: flex; gap: 12px; align-items: center; margin: 28px 0 12px; flex-wrap: wrap; }
-.check-box { display: flex; gap: 10px; align-items: center; background: rgba(18,25,41,0.82); backdrop-filter: blur(12px); border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 4px 12px; flex: 1; min-width: 220px; transition: border-color .2s; }
+.check-box { display: flex; gap: 10px; align-items: center; background: var(--bg-surface); backdrop-filter: blur(12px); border: 1px solid var(--border-light); border-radius: var(--radius-lg); padding: 4px 12px; flex: 1; min-width: 220px; transition: border-color .2s; }
 .check-box:focus-within { border-color: var(--accent-red); box-shadow: 0 0 0 3px var(--accent-red-glow); }
 .check-box input { flex: 1; background: transparent; border: none; color: var(--text-primary); padding: 12px 6px; font-size: 15px; font-family: var(--font-mono); outline: none; }
 .cmp-label { font-family: var(--font-mono); font-size: 13px; font-weight: 700; color: var(--accent-red); background: rgba(231,76,60,0.12); padding: 4px 10px; border-radius: 8px; letter-spacing: 1px; }
@@ -50,7 +50,7 @@
 
 #result { margin-top: 28px; }
 .cmp-skel { color: var(--text-dim); font-size: 13px; padding: 24px; text-align: center; }
-.cmp-empty { background: rgba(18,25,41,0.82); backdrop-filter: blur(12px); border: 1px dashed var(--border-light); border-radius: var(--radius-lg); padding: 48px 24px; text-align: center; color: var(--text-dim); font-size: 13px; }
+.cmp-empty { background: var(--bg-surface); backdrop-filter: blur(12px); border: 1px dashed var(--border-light); border-radius: var(--radius-lg); padding: 48px 24px; text-align: center; color: var(--text-dim); font-size: 13px; }
 .cmp-empty i { font-size: 36px; color: var(--accent-red-dim); margin-bottom: 14px; display: block; }
 
 /* ===== Two-column layout ===== */
@@ -58,7 +58,7 @@
 @media (max-width: 900px) { .cmp-grid { grid-template-columns: 1fr; } }
 
 .cmp-col {
-    background: rgba(18,25,41,0.82); backdrop-filter: blur(12px);
+    background: var(--bg-surface); backdrop-filter: blur(12px);
     border: 1px solid var(--border-light); border-radius: var(--radius-lg);
     padding: 22px; position: relative; overflow: hidden;
 }

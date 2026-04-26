@@ -98,6 +98,14 @@
 
 <div class="panel" style="max-width:1400px;margin:0 auto 16px;padding:20px 24px;">
     <div class="panel-h">
+        <h2><i class="fas fa-satellite-dish"></i> Live · UZEX · только что закрытые сделки</h2>
+        <span class="panel-tag pulse" id="xaridTag">кэш 5 мин</span>
+    </div>
+    <div class="xarid-feed" id="xaridFeed"><div class="feed-skel">Загрузка с xarid.uzex.uz…</div></div>
+</div>
+
+<div class="panel" style="max-width:1400px;margin:0 auto 16px;padding:20px 24px;">
+    <div class="panel-h">
         <h2><i class="fas fa-chart-line"></i> Динамика по месяцам</h2>
         <span class="panel-tag" id="trendsTag">—</span>
     </div>
@@ -116,7 +124,7 @@
         <span class="hm-leg-item"><span class="hm-leg-cell" style="background:#27ae60"></span>низкий</span>
         <span class="hm-leg-item"><span class="hm-leg-cell" style="background:#f39c12"></span>средний</span>
         <span class="hm-leg-item"><span class="hm-leg-cell" style="background:#e74c3c"></span>высокий</span>
-        <span class="hm-leg-item"><span class="hm-leg-cell" style="background:rgba(30,42,58,0.5)"></span>нет данных</span>
+        <span class="hm-leg-item"><span class="hm-leg-cell" style="background:var(--bg-elevated)"></span>нет данных</span>
     </div>
 </div>
 
@@ -164,7 +172,7 @@
 /* ========== KPI ========== */
 .kpi-bar { display:grid; grid-template-columns: repeat(5, 1fr); gap:16px; max-width:1400px; margin:0 auto 32px; padding: 0 24px; }
 @media (max-width:1100px){ .kpi-bar { grid-template-columns: repeat(2, 1fr); } }
-.kpi-card { position:relative; background: rgba(18,25,41,0.78); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border:1px solid var(--border-light); border-radius:var(--radius-lg); padding:20px; overflow:hidden; transition: all .25s; cursor: default; }
+.kpi-card { position:relative; background: var(--bg-surface); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border:1px solid var(--border-light); border-radius:var(--radius-lg); padding:20px; overflow:hidden; transition: all .25s; cursor: default; }
 .kpi-card[onclick] { cursor: pointer; }
 .kpi-card:hover { transform: translateY(-3px); border-color: var(--border-light); }
 .kpi-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: linear-gradient(90deg, currentColor, transparent); }
@@ -185,7 +193,7 @@
 @media (max-width:1300px){ .dash-grid { grid-template-columns: 1fr 1fr; } .feed-panel { grid-column: 1 / -1; } }
 @media (max-width:800px){ .dash-grid { grid-template-columns: 1fr; } }
 
-.panel { background: rgba(18,25,41,0.82); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border:1px solid var(--border-light); border-radius:var(--radius-lg); padding:20px; }
+.panel { background: var(--bg-surface); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border:1px solid var(--border-light); border-radius:var(--radius-lg); padding:20px; }
 .panel-h { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
 .panel-h h2 { font-family:var(--font-mono); font-size:13px; text-transform:uppercase; letter-spacing:1.5px; color:var(--text-secondary); display:flex; align-items:center; gap:8px; }
 .panel-h h2 i { color:var(--accent-red-dim); }
@@ -248,7 +256,7 @@
 .hm-leg-cell { width: 18px; height: 12px; border-radius: 2px; }
 
 /* === Tender of week ===*/
-.tow-card { display: block; text-decoration: none; color: inherit; padding: 18px 22px; border: 1px solid var(--border-light); border-radius: var(--radius-lg); background: rgba(18,25,41,0.85); backdrop-filter: blur(12px); transition: all .25s; }
+.tow-card { display: block; text-decoration: none; color: inherit; padding: 18px 22px; border: 1px solid var(--border-light); border-radius: var(--radius-lg); background: var(--bg-surface); backdrop-filter: blur(12px); transition: all .25s; }
 .tow-card.tow-red   { border-color: rgba(231,76,60,0.5); box-shadow: 0 0 30px rgba(231,76,60,0.18); }
 .tow-card.tow-amber { border-color: rgba(230,126,34,0.5); }
 .tow-card:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(231,76,60,0.25); }
@@ -257,6 +265,22 @@
 .tow-score { font-family: var(--font-mono); font-size: 32px; font-weight: 700; color: #ff6f61; text-align: center; padding: 10px 14px; background: rgba(231,76,60,0.12); border-radius: 8px; }
 .tow-card.tow-amber .tow-score { color: var(--accent-amber); background: rgba(230,126,34,0.12); }
 .tow-card.tow-green .tow-score { color: var(--success); background: rgba(39,174,96,0.12); }
+
+/* === UZEX live feed === */
+.xarid-feed { display: flex; flex-direction: column; gap: 8px; max-height: 520px; overflow-y: auto; padding-right: 6px; }
+.xf-item { display: grid; grid-template-columns: 130px 1fr auto; gap: 14px; align-items: center; padding: 12px 14px; background: var(--bg-elevated); border-radius: var(--radius); border-left: 3px solid var(--accent-cyan); opacity: 0; animation: slideIn .35s forwards; transition: transform .15s; }
+.xf-item:hover { transform: translateX(2px); background: var(--bg-surface-hover); }
+.xf-item.flag-no-compete { border-left-color: var(--accent-amber); }
+.xf-l { display: flex; flex-direction: column; gap: 4px; }
+.xf-pcp { font-family: var(--font-mono); font-size: 11px; padding: 3px 8px; border-radius: 8px; background: rgba(0,172,193,0.15); color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.8px; text-align: center; }
+.xf-pcp.red { background: rgba(230,126,34,0.18); color: var(--accent-amber); }
+.xf-time { font-family: var(--font-mono); font-size: 10px; color: var(--text-dim); }
+.xf-c { min-width: 0; }
+.xf-name { font-size: 13px; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xf-meta { font-size: 11px; color: var(--text-secondary); margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xf-meta b { color: var(--text-primary); }
+.xf-r { text-align: right; font-family: var(--font-mono); font-weight: 700; color: var(--accent-cyan); white-space: nowrap; }
+.xf-r .xf-uzs { font-weight: 400; font-size: 10px; color: var(--text-dim); }
 .tow-title { font-size: 16px; font-weight: 600; color: var(--text-primary); }
 .tow-meta { font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary); margin-top: 6px; }
 .tow-meta b { color: var(--text-primary); }
@@ -464,6 +488,39 @@ async function loadTOW() {
     } catch {}
 }
 
+async function loadXarid() {
+    try {
+        const r = await api('/api/live/xarid');
+        const list = r.data || [];
+        const root = document.getElementById('xaridFeed');
+        if (r.error) { root.innerHTML = `<div class="feed-skel">Источник UZEX недоступен: ${r.error}</div>`; return; }
+        if (!list.length) { root.innerHTML = '<div class="feed-skel">Свежих сделок нет.</div>'; return; }
+        document.getElementById('xaridTag').textContent = r.cached ? `cached ${r.age_s}s` : 'fresh';
+        root.innerHTML = list.slice(0, 12).map((d, i) => {
+            const lat = d.deal_date ? d.deal_date.slice(0, 16).replace('T', ' ') : '—';
+            const usd = d.deal_cost ? '$' + Math.round(d.deal_cost / 12500).toLocaleString('en-US') : '—';
+            const lessOne = d.pcp_count <= 1;
+            return `
+            <div class="xf-item ${lessOne ? 'flag-no-compete' : ''}" style="animation-delay:${i*40}ms">
+                <div class="xf-l">
+                    <span class="xf-pcp ${lessOne ? 'red' : ''}">${d.pcp_count ?? '?'} участн</span>
+                    <span class="xf-time">${lat}</span>
+                </div>
+                <div class="xf-c">
+                    <div class="xf-name" title="${d.product_name || ''}">${(d.product_name || '—').slice(0, 75)}${(d.product_name||'').length>75?'…':''}</div>
+                    <div class="xf-meta">
+                        <b>${d.provider_name || 'Поставщик'}</b> ← ${d.customer_name || 'Заказчик'}
+                        ${d.customer_region_name ? ` · 📍 ${d.customer_region_name}` : ''}
+                    </div>
+                </div>
+                <div class="xf-r">${usd}<br><span class="xf-uzs">${d.deal_cost ? Math.round(d.deal_cost/1e6) + ' млн сум' : ''}</span></div>
+            </div>`;
+        }).join('');
+    } catch (e) {
+        document.getElementById('xaridFeed').innerHTML = `<div class="feed-skel" style="color:var(--accent-amber)">Ошибка: ${e.message}</div>`;
+    }
+}
+
 async function loadMinistries() {
     try {
         const r = await api('/api/analytics/ministries?limit=15');
@@ -487,6 +544,7 @@ async function loadMinistries() {
     try { await loadTrends(); } catch (e) { console.error(e); }
     try { await loadHeatmap(); } catch (e) { console.error(e); }
     try { await loadMinistries(); } catch (e) { console.error(e); }
+    try { await loadXarid(); } catch (e) { console.error(e); }
     try { await loadCompanies(); } catch (e) { console.error(e); }
 })();
 </script>

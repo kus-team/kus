@@ -66,7 +66,7 @@
 /* HERO */
 .hero-card {
     position: relative; padding: 32px; margin-bottom: 24px; overflow: hidden;
-    background: rgba(18,25,41,0.82); backdrop-filter: blur(12px);
+    background: var(--bg-surface); backdrop-filter: blur(12px);
     border: 1px solid var(--border-light); border-radius: var(--radius-lg);
 }
 .hero-card.hero-skel { min-height: 120px; display: flex; align-items: center; justify-content: center; }
@@ -95,7 +95,7 @@
 .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
 @media (max-width: 1100px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
 .kpi-mini {
-    background: rgba(18,25,41,0.78); backdrop-filter: blur(8px);
+    background: var(--bg-surface); backdrop-filter: blur(8px);
     border: 1px solid var(--border-light); border-radius: var(--radius);
     padding: 14px 16px; position: relative; overflow: hidden;
 }
@@ -111,7 +111,7 @@
 .cp-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; margin-bottom: 16px; }
 @media (max-width: 1100px) { .cp-grid { grid-template-columns: 1fr; } }
 .panel {
-    background: rgba(18,25,41,0.82); backdrop-filter: blur(12px);
+    background: var(--bg-surface); backdrop-filter: blur(12px);
     border: 1px solid var(--border-light); border-radius: var(--radius-lg);
     padding: 20px; margin-bottom: 16px;
 }
