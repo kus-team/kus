@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% set active_page = "cases" %}
+{% block title %}Кейсы для расследования{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h1><i class="fas fa-folder-tree"></i> Кейсы для расследования</h1>
+            <p class="subtitle">Подборки пар «заказчик ↔ победитель», на которые в первую очередь стоит обратить внимание журналисту. Сортировка по комбинации «количество побед × средний риск».</p>
+        </div>
+        <div class="case-meta" id="caseMeta">—</div>
+    </div>
+
+    <div class="cases-grid" id="cases">
+        <div class="case-skel">Загрузка кейсов…</div>
+    </div>
+</div>
+
+<style>
+.page { max-width: 1400px; margin: 0 auto; padding: 32px 24px 60px; }
+.page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 28px; gap: 16px; flex-wrap: wrap; }
+.page-header h1 { font-family: var(--font-mono); font-size: 26px; display: flex; align-items: center; gap: 12px; }
+.page-header h1 i { color: var(--accent-red-dim); }
+.page-header .subtitle { color: var(--text-secondary); font-size: 13px; max-width: 720px; line-height: 1.6; margin-top: 6px; }
+.case-meta { font-family: var(--font-mono); font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; }
+.case-skel { color: var(--text-dim); font-size: 13px; padding: 60px; text-align: center; grid-column: 1 / -1; }
+
+.cases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 18px; }
+
+.case-card {
+    background: rgba(18,25,41,0.82); backdrop-filter: blur(12px);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-lg);
+    padding: 22px 24px; position: relative; overflow: hidden;
+    opacity: 0; transform: translateY(8px); animation: caseFade .35s forwards;
+}
+@keyframes caseFade { to { opacity: 1; transform: translateY(0); } }
+
+.case-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--accent-red), transparent);
+}
+.case-card.r-amber::before { background: linear-gradient(90deg, var(--accent-amber), transparent); }
+.case-card.r-green::before { background: linear-gradient(90deg, var(--success), transparent); }
+
+.case-rank {
+    position: absolute; top: 14px; right: 14px;
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-dim);
+    background: var(--bg-elevated); padding: 3px 9px; border-radius: 12px;
+    letter-spacing: 1px;
+}
+
+.case-pair {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+    font-family: var(--font-mono); font-size: 12px;
+}
+.case-pair .arrow { color: var(--text-dim); }
+.case-side {
+    flex: 1; min-width: 0;
+    padding: 8px 12px; background: var(--bg-elevated);
+    border-radius: var(--radius); border: 1px solid var(--border);
+}
+.case-side .side-tin { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+.case-side .side-name { color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+
+.case-narrative {
+    font-size: 13px; line-height: 1.6; color: var(--text-primary); margin: 12px 0;
+    padding: 14px 16px; background: rgba(192,57,43,0.08);
+    border-left: 3px solid var(--accent-red-dim); border-radius: 4px;
+    font-family: var(--font-ui);
+}
+.case-card.r-amber .case-narrative { background: rgba(230,126,34,0.08); border-left-color: var(--accent-amber); }
+.case-card.r-green .case-narrative { background: rgba(39,174,96,0.08); border-left-color: var(--success); }
+
+.case-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    padding: 12px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin: 12px 0 14px;
+}
+.case-stats .s-val { font-family: var(--font-mono); font-size: 16px; font-weight: 700; color: var(--text-primary); }
+.case-stats .s-val.red { color: #ff6f61; }
+.case-stats .s-lab { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+
+.case-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.case-actions .btn { font-size: 11px; padding: 6px 12px; }
+
+.case-bar { height: 4px; background: var(--bg-input); border-radius: 2px; overflow: hidden; margin: 8px 0 0; }
+.case-bar > div { height: 100%; background: linear-gradient(90deg, var(--success), var(--accent-amber), #e74c3c); transition: width 1s; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function buildNarrative(c) {
+    const parts = [];
+    parts.push(`«${c.winner_name || 'Юрлицо ИНН ' + c.winner_tin}» выиграл${c.winner_name ? 'а' : ''} <b>${c.wins}</b> контракта у одного и того же заказчика «${c.customer_name || 'ИНН ' + c.customer_tin}»`);
+    if (c.first_win && c.last_win) parts.push(`в период <b>${c.first_win}…${c.last_win}</b>`);
+    parts.push(`на общую сумму <b>${fmtUsd(c.total_usd)}</b> (${fmtUzs(c.total_uzs)})`);
+    if (c.red_wins > 0)        parts.push(`Из них <b style="color:#ff6f61">${c.red_wins}</b> в красной зоне (risk≥70)`);
+    if (c.direct_count > 0)    parts.push(`Прямых закупок без конкурса: <b>${c.direct_count}</b>`);
+    parts.push(`Средний risk_score пары — <b>${c.avg_risk}</b>`);
+    return parts.join('. ') + '.';
+}
+
+(async () => {
+    try {
+        const r = await api('/api/cases?limit=50');
+        const list = r.data || [];
+        document.getElementById('caseMeta').textContent = `${list.length} кейсов · сортировка: подозрительность ↓`;
+        const root = document.getElementById('cases');
+        if (!list.length) { root.innerHTML = '<div class="case-skel">Кейсов с ≥3 повторными победами не найдено.</div>'; return; }
+        root.innerHTML = list.map((c, i) => {
+            const cls = c.avg_risk >= 70 ? '' : c.avg_risk >= 30 ? 'r-amber' : 'r-green';
+            return `
+            <div class="case-card ${cls}" style="animation-delay:${i * 30}ms">
+                <div class="case-rank">#${i + 1}</div>
+                <div class="case-pair">
+                    <div class="case-side">
+                        <div class="side-tin">Заказчик ИНН ${c.customer_tin}</div>
+                        <div class="side-name" title="${c.customer_name || c.customer_tin}">${c.customer_name || '— название не указано —'}</div>
+                    </div>
+                    <i class="fas fa-arrow-right arrow"></i>
+                    <div class="case-side">
+                        <div class="side-tin">Победитель ИНН ${c.winner_tin}</div>
+                        <div class="side-name" title="${c.winner_name || c.winner_tin}">${c.winner_name || '— название не указано —'}</div>
+                    </div>
+                </div>
+                <div class="case-narrative">${buildNarrative(c)}</div>
+                <div class="case-stats">
+                    <div><div class="s-val">${c.wins}</div><div class="s-lab">побед</div></div>
+                    <div><div class="s-val red">${c.red_wins}</div><div class="s-lab">красных</div></div>
+                    <div><div class="s-val">${fmtUsd(c.total_usd)}</div><div class="s-lab">сумма</div></div>
+                    <div><div class="s-val">${c.avg_risk}</div><div class="s-lab">avg risk</div></div>
+                </div>
+                <div class="case-bar"><div style="width:${Math.min(100, c.avg_risk)}%"></div></div>
+                <div class="case-actions">
+                    <a class="btn btn-secondary btn-sm" href="/companies/${encodeURIComponent(c.winner_tin)}"><i class="fas fa-building"></i> Профиль победителя</a>
+                    <a class="btn btn-secondary btn-sm" href="/tenders?winner_tin=${encodeURIComponent(c.winner_tin)}&customer_tin=${encodeURIComponent(c.customer_tin)}"><i class="fas fa-list"></i> Все контракты пары</a>
+                </div>
+            </div>`;
+        }).join('');
+    } catch (e) {
+        document.getElementById('cases').innerHTML = `<div class="case-skel" style="color:#ff6f61">Ошибка: ${e.message}</div>`;
+    }
+})();
+</script>
+{% endblock %}

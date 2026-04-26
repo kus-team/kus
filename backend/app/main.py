@@ -95,6 +95,11 @@ def page_complaint(request: Request, tender_id: int):
     return templates.TemplateResponse("complaint.html", {"request": request, "tender_id": tender_id})
 
 
+@app.get("/cases", response_class=HTMLResponse)
+def page_cases(request: Request):
+    return templates.TemplateResponse("cases.html", {"request": request})
+
+
 @app.get("/graph", response_class=HTMLResponse)
 def page_graph(request: Request):
     return templates.TemplateResponse("graph.html", {"request": request})
@@ -451,6 +456,33 @@ def compare_tenders(a: int = Query(...), b: int = Query(...)) -> dict[str, Any]:
 
 
 # ------------------------------------------------------------------ CSV export
+
+@app.get("/api/cases")
+def api_cases(limit: int = Query(50, ge=1, le=200)) -> dict[str, Any]:
+    """Топ-кейсов: пары (заказчик, победитель) с >= 3 победами + большим объёмом, отсортированные по подозрительности."""
+    rows = fetch_all("""
+        SELECT t.customer_tin, t.winner_tin,
+               COALESCE(MAX(t.customer_name), MAX(c_od.name)) AS customer_name,
+               COALESCE(MAX(t.winner_name), MAX(w_od.name))   AS winner_name,
+               COUNT(*)                                        AS wins,
+               COALESCE(SUM(t.amount_uzs), 0)                  AS total_uzs,
+               COALESCE(SUM(t.amount_usd), 0)                  AS total_usd,
+               ROUND(AVG(t.risk_score), 0)                     AS avg_risk,
+               SUM(CASE WHEN t.risk_score >= 70 THEN 1 ELSE 0 END) AS red_wins,
+               SUM(CASE WHEN t.is_direct_purchase THEN 1 ELSE 0 END) AS direct_count,
+               MIN(t.date) AS first_win, MAX(t.date) AS last_win
+        FROM tenders t
+        LEFT JOIN org_directory c_od ON c_od.tin = t.customer_tin
+        LEFT JOIN org_directory w_od ON w_od.tin = t.winner_tin
+        WHERE t.customer_tin IS NOT NULL AND t.winner_tin IS NOT NULL
+        GROUP BY t.customer_tin, t.winner_tin
+        HAVING COUNT(*) >= 3
+        ORDER BY (COUNT(*) * COALESCE(AVG(t.risk_score),1) + SUM(CASE WHEN t.risk_score >= 70 THEN 30 ELSE 0 END)) DESC,
+                 COALESCE(SUM(t.amount_uzs),0) DESC
+        LIMIT %(lim)s
+    """, {"lim": limit})
+    return {"data": rows}
+
 
 @app.get("/api/export/tenders.csv")
 def export_csv(min_risk: int = Query(0, ge=0, le=100), limit: int = Query(5000, ge=1, le=50000)):
